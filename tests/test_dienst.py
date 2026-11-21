@@ -24,7 +24,7 @@ ROH = {
                 {
                     "mode": "WALK",
                     "from": {"name": "START", "lat": 50.33, "lon": 8.76},
-                    "to": {"name": "Bahnhof Nord"},
+                    "to": {"name": "Bahnhof Nord", "track": "3"},
                     "startTime": "2026-01-31T09:10:00Z",
                     "endTime": "2026-01-31T09:14:00Z",
                     "distance": 280.4,
@@ -77,6 +77,8 @@ class Umformen(unittest.TestCase):
         fuss, zug, ubahn = v[0]["teile"]
         self.assertEqual(("FUSS", 280, 4), (fuss["art"], fuss["meter"], fuss["dauer_min"]))
         self.assertNotIn("linie", fuss)
+        # Der Fußweg endet am Bahnsteig, trägt aber kein Gleis.
+        self.assertNotIn("gleis", fuss["nach"])
         self.assertEqual(("REGIONALZUG", "RE30", "Hauptstadt Hbf", "Beispielbahn"),
                          (zug["art"], zug["linie"], zug["richtung"], zug["betreiber"]))
         self.assertTrue(zug["echtzeit"])

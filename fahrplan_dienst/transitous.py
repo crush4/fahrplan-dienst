@@ -132,8 +132,9 @@ def _teil(leg: Any) -> dict[str, Any] | None:
     art = _ARTEN.get(_text(leg.get("mode")) or "", "SONST")
     teil: dict[str, Any] = {
         "art": art,
-        "von": _halt(von, ab_plan, ab),
-        "nach": _halt(nach, an_plan, an),
+        # Ein Fußweg hat kein Gleis, auch wenn er an einem Bahnsteig beginnt oder endet.
+        "von": _halt(von, ab_plan, ab, mit_gleis=art != FUSS),
+        "nach": _halt(nach, an_plan, an, mit_gleis=art != FUSS),
         "dauer_min": _minuten(ab, an),
     }
     if art == FUSS:
@@ -152,10 +153,10 @@ def _teil(leg: Any) -> dict[str, Any] | None:
     return teil
 
 
-def _halt(ort: dict[str, Any], plan: str, echt: str) -> dict[str, Any]:
+def _halt(ort: dict[str, Any], plan: str, echt: str, mit_gleis: bool = True) -> dict[str, Any]:
     halt: dict[str, Any] = {"name": _text(ort.get("name")) or "", "plan": plan, "zeit": echt}
     # „track“ ist das aktuelle Gleis, „scheduledTrack“ das geplante. Viele Regionalfahrpläne nennen keines.
-    gleis = _text(ort.get("track")) or _text(ort.get("scheduledTrack"))
+    gleis = (_text(ort.get("track")) or _text(ort.get("scheduledTrack"))) if mit_gleis else None
     if gleis:
         halt["gleis"] = gleis
         geplant = _text(ort.get("scheduledTrack"))
