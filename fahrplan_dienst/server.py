@@ -7,6 +7,8 @@
                         ankunft=1         (optional; zeit ist dann die späteste Ankunft)
                         anzahl=<1..6>     (optional; Standard 4)
                       Antwort {"quelle", "quellen_url", "verbindungen": [...]} (Form siehe transitous.py).
+                      Das Gleis von Zügen und S-Bahnen kommt, wo Transitous es nicht kennt, aus den Bahnhofstafeln
+                      (tafel.py); die Haltestelle trägt dann "gleis_quelle".
 
 Fehler kommen als {"fehler": "<Text>"} mit 400 (Werte), 401 (Schlüssel), 429 (eigene Grenze je Stunde),
 502/503/504 (Transitous). Gleiche Abfragen innerhalb einer Minute kommen aus dem Zwischenspeicher.
@@ -25,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 from urllib.parse import parse_qs, urlsplit
 
-from . import VERSION, transitous
+from . import VERSION, tafel, transitous
 from .konfig import Konfig
 
 LOG = logging.getLogger("fahrplan_dienst")
@@ -47,8 +49,11 @@ class Dienst:
     """Prüft Werte, zählt Abfragen und merkt sich Antworten. `hole` und `uhr` sind für Tests austauschbar."""
 
     def __init__(self, konfig: Konfig, hole: Callable[[str, str], dict[str, Any]] = transitous.hole,
-                 uhr: Callable[[], float] = time.monotonic):
+                 uhr: Callable[[], float] = time.monotonic, tafeln: "tafel.Tafeln | None" = None):
         self.konfig = konfig
+        # Gleise aus den Bahnhofstafeln; None, wenn abgeschaltet.
+        self.tafeln = tafeln if tafeln is not None else (
+            tafel.Tafeln(konfig.tafel, konfig.kontakt) if konfig.tafel else None)
         self._hole = hole
         self._uhr = uhr
         self._sperre = threading.Lock()
@@ -95,9 +100,15 @@ class Dienst:
                 raise Abgelehnt(429, "Zu viele Abfragen in dieser Stunde. Bitte später noch einmal.")
             self._abfragen.append(jetzt)
         try:
-            ergebnis = transitous.forme_um(self._hole(url, self.konfig.kontakt))
+            # Transitous liefert oft mehr als gewünscht; mehr als gefragt geht nicht weiter.
+            ergebnis = transitous.forme_um(self._hole(url, self.konfig.kontakt))[:anzahl]
         except transitous.QuelleFehler as fehler:
             raise Abgelehnt(fehler.status, str(fehler)) from None
+        if self.tafeln is not None:
+            try:
+                self.tafeln.ergaenze(ergebnis)
+            except Exception:  # noqa: BLE001 - das Gleis ist eine Zugabe und darf die Verbindung nie verhindern
+                LOG.warning("Gleise nicht ergänzt", exc_info=True)
         with self._sperre:
             if len(self._gemerkt) >= MAX_GEMERKT:
                 self._gemerkt.clear()
@@ -152,6 +163,8 @@ def baue_server(dienst: Dienst, host: str, port: int) -> ThreadingHTTPServer:
                     "quelle": "Transitous",
                     "abfragen_letzte_stunde": dienst.abfragen_letzte_stunde(),
                     "max_je_stunde": dienst.konfig.max_je_stunde,
+                    "gleis_quelle": "Bahnhofstafeln (DBF)" if dienst.tafeln is not None else None,
+                    "tafeln_letzte_stunde": dienst.tafeln.abfragen_letzte_stunde() if dienst.tafeln else 0,
                 })
                 return
             if teile.path != "/verbindungen":

@@ -1,3 +1,3 @@
-"""Fahrplan-Dienst: Verbindungen im öffentlichen Verkehr, kurz und einheitlich, aus Transitous."""
+"""Fahrplan-Dienst: Verbindungen im öffentlichen Verkehr, kurz und einheitlich, aus Transitous; Gleise aus den Bahnhofstafeln."""
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"

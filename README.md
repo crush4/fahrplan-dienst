@@ -1,12 +1,16 @@
 # Fahrplan-Dienst
 
 Ein kleiner Dienst, der Verbindungen im öffentlichen Verkehr abfragt und kurz und einheitlich zurückgibt:
-Linie, Richtung, Abfahrt und Ankunft nach Plan und in Echtzeit, Umstiege und – wo die Quelle es kennt – das Gleis.
+Linie, Richtung, Abfahrt und Ankunft nach Plan und in Echtzeit, Umstiege und das Gleis von Zügen und S-Bahnen.
 
 Die Daten kommen von [Transitous](https://transitous.org), einem freien, gemeinschaftlich betriebenen
 Fahrplan-Dienst auf Basis von [MOTIS](https://github.com/motis-project/motis). Der Fahrplan-Dienst ist dafür gedacht,
 dass eine einzelne Navi-App ihn fragt, statt selbst mit Transitous zu sprechen. Er hält die Regeln von Transitous
 an einer Stelle ein: Kennung mit Kontakt, wenige Abfragen, Nennung der Quellen.
+
+Das Gleis kennt Transitous im Regional- und S-Bahn-Verkehr oft nicht. Der Dienst schlägt es deshalb auf der
+Bahnhofstafel des Abfahrtsbahnhofs nach, über [DBF](https://dbf.finalrewind.org)
+([db-fakedisplay](https://github.com/derf/db-fakedisplay)).
 
 Nur Python-Standardbibliothek, ab Python 3.11. Kein Framework, keine Pakete.
 
@@ -56,14 +60,18 @@ Antwort (gekürzt):
 
 - Zeiten stehen in UTC. Die App rechnet sie in die Ortszeit um.
 - `art` ist eines von `FUSS`, `FERNZUG`, `REGIONALZUG`, `S_BAHN`, `U_BAHN`, `TRAM`, `BUS`, `FERNBUS`, `FAEHRE`, `SONST`.
-- `gleis` fehlt, wenn die Quelle keines nennt. Bei Fernzügen ist es meist da, im Regional- und Stadtverkehr oft nicht.
+- `gleis` steht bei der Abfahrt von Zügen und S-Bahnen an Bahnhöfen der Bahn. `gleis_quelle: "Bahnhofstafel"` zeigt,
+  dass es von der Tafel stammt; `gleis_plan` nennt bei einem Gleiswechsel das ursprüngliche Gleis.
+- Kein Gleis gibt es für U-Bahn, Straßenbahn und Bus, für Ankünfte und für Fahrten, die mehr als drei Stunden
+  voraus liegen: So weit reichen die Tafeln nicht.
 
-`GET /status` (ohne Schlüssel) nennt Version, Quelle und die Zahl der Abfragen der letzten Stunde.
+`GET /status` (ohne Schlüssel) nennt Version, Quellen und die Zahl der Abfragen der letzten Stunde, getrennt nach
+Transitous und Bahnhofstafeln.
 
 Fehler kommen als `{"fehler": "<Text>"}`: 400 (Werte), 401 (Schlüssel), 429 (eigene Grenze je Stunde),
 502/503/504 (Transitous antwortet nicht oder lehnt ab).
 
-## Sparsam mit Transitous
+## Sparsam mit den Quellen
 
 Transitous wird von Freiwilligen betrieben. Der Dienst hält sich deshalb an die
 [Regeln für die Nutzung](https://transitous.org/api/):
@@ -75,7 +83,15 @@ Transitous wird von Freiwilligen betrieben. Der Dienst hält sich deshalb an die
 - Kein automatisches Abfragen: Der Dienst fragt nur, wenn die App fragt.
 - Eine App, die die Verbindungen zeigt, nennt Transitous als Quelle und verlinkt `quellen_url`.
 
-Wer den Dienst für mehr als den eigenen Gebrauch einsetzen will, spricht das bitte vorher mit Transitous ab.
+DBF betreibt eine Privatperson. Auch dort bleibt der Dienst zurückhaltend:
+
+- Dieselbe Kennung mit Kontakt.
+- Eine Tafel wird höchstens einmal je Minute gefragt, die Zuordnung einer Haltestelle zu ihrem Bahnhof nur einmal.
+- Höchstens sechs Bahnhöfe je Abfrage und 120 Abfragen je Stunde.
+- Fällt DBF aus, kommt die Verbindung trotzdem, nur ohne Gleis. Mit `TAFEL_URL` lässt sich eine eigene
+  DBF-Instanz nutzen, mit `OHNE_TAFEL=1` das Nachschlagen abschalten.
+
+Wer den Dienst für mehr als den eigenen Gebrauch einsetzen will, spricht das bitte vorher mit den Betreibern ab.
 
 ## Starten
 
@@ -91,6 +107,8 @@ KONTAKT=du@example.org ZUGANG_SCHLUESSEL=<mindestens16Zeichen> python -m fahrpla
 | `PORT` | Standard 8080 |
 | `MAX_JE_STUNDE` | Standard 25, höchstens 30 |
 | `TRANSITOUS_URL` | Standard `https://api.transitous.org`; für eine eigene MOTIS-Instanz |
+| `TAFEL_URL` | Standard `https://dbf.finalrewind.org`; für eine eigene DBF-Instanz |
+| `OHNE_TAFEL=1` | Kein Gleis von den Bahnhofstafeln |
 
 Mit Docker: `docker build -t fahrplan-dienst .`, dann mit denselben Werten als Umgebung starten.
 Für CapRover liegt eine `captain-definition` bei.
@@ -109,4 +127,5 @@ Die Tests brauchen kein Netz.
 ## Lizenz
 
 [MIT](LICENSE). Die Fahrplandaten gehören ihren jeweiligen Quellen, siehe
-[transitous.org/sources](https://transitous.org/sources/).
+[transitous.org/sources](https://transitous.org/sources/). Die Gleise stammen aus den Bahnhofstafeln der
+Deutschen Bahn, abgerufen über DBF.

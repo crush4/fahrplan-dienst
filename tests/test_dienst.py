@@ -62,7 +62,8 @@ ROH = {
 
 
 def konfig(**mehr) -> Konfig:
-    env = {"KONTAKT": "betreiber@example.org", "ZUGANG_SCHLUESSEL": SCHLUESSEL}
+    # Ohne Bahnhofstafeln: Diese Tests dürfen nie ins Netz.
+    env = {"KONTAKT": "betreiber@example.org", "ZUGANG_SCHLUESSEL": SCHLUESSEL, "OHNE_TAFEL": "1"}
     env.update(mehr)
     return Konfig.aus_umgebung(env)
 
@@ -117,6 +118,13 @@ class Einstellungen(unittest.TestCase):
         self.assertEqual((8080, "betreiber@example.org", "https://api.transitous.org", 25),
                          (k.port, k.kontakt, k.quelle, k.max_je_stunde))
         self.assertNotIn(SCHLUESSEL, repr(k))
+        self.assertIsNone(k.tafel)
+        ohne_schluessel = {"KONTAKT": "a@b.de", "OHNE_SCHLUESSEL": "1"}
+        self.assertEqual("https://dbf.finalrewind.org", Konfig.aus_umgebung(ohne_schluessel).tafel)
+        self.assertEqual("https://tafel.example",
+                         Konfig.aus_umgebung({**ohne_schluessel, "TAFEL_URL": "https://tafel.example/"}).tafel)
+        with self.assertRaises(ValueError):
+            Konfig.aus_umgebung({**ohne_schluessel, "TAFEL_URL": "tafel"})
         for env in ({"ZUGANG_SCHLUESSEL": SCHLUESSEL}, {"KONTAKT": "kein kontakt", "ZUGANG_SCHLUESSEL": SCHLUESSEL},
                     {"KONTAKT": "a@b.de"}, {"KONTAKT": "a@b.de", "ZUGANG_SCHLUESSEL": "kurz"},
                     {"KONTAKT": "a@b.de", "OHNE_SCHLUESSEL": "1", "MAX_JE_STUNDE": "31"},
