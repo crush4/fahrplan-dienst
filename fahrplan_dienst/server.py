@@ -9,6 +9,7 @@
                       Antwort {"quelle", "quellen_url", "verbindungen": [...]} (Form siehe transitous.py).
                       Das Gleis von Zügen und S-Bahnen kommt, wo Transitous es nicht kennt, aus den Bahnhofstafeln
                       (tafel.py); die Haltestelle trägt dann "gleis_quelle".
+                      Jedes Teilstück trägt seinen Streckenverlauf als "weg": [[Breite, Länge], …], höchstens 120.
 
 Fehler kommen als {"fehler": "<Text>"} mit 400 (Werte), 401 (Schlüssel), 429 (eigene Grenze je Stunde),
 502/503/504 (Transitous). Gleiche Abfragen innerhalb einer Minute kommen aus dem Zwischenspeicher.

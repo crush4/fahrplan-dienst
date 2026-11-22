@@ -3,11 +3,16 @@
 Die Antwort nennt je Verbindung Abfahrt, Ankunft, Dauer und Umstiege, und je Teilstück Linie, Richtung, Haltestellen,
 Gleis (wenn die Quelle eines kennt), Zeiten nach Plan und in Echtzeit. Zeiten bleiben, wie Transitous sie liefert:
 ISO 8601 in UTC. Die App rechnet sie in die Ortszeit um.
+
+Jedes Teilstück trägt außerdem seinen Streckenverlauf als "weg": Punkte [Breite, Länge] vom Einstieg zum Ausstieg,
+höchstens MAX_PUNKTE. Transitous liefert ihn je Abschnitt in "legGeometry" als kodierte Polylinie mit eigener
+Genauigkeit ("precision", bei /api/v1/plan 7 Nachkommastellen).
 """
 
 from __future__ import annotations
 
 import json
+import math
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -19,6 +24,10 @@ from . import VERSION
 ZEITLIMIT_S = 20
 MAX_ANTWORT = 4 * 1024 * 1024
 FUSS = "FUSS"
+# So viele Punkte trägt der Streckenverlauf eines Teilstücks höchstens; mehr wird gleichmäßig ausgedünnt.
+MAX_PUNKTE = 120
+# Längere Polylinien liest der Dienst nicht (der Verlauf eines ICE quer durchs Land braucht etwa 50.000 Zeichen).
+MAX_POLYLINIE = 400_000
 
 # Verkehrsmittel von MOTIS → kurze deutsche Art. Unbekanntes wird zu „SONST“.
 _ARTEN = {
@@ -137,6 +146,9 @@ def _teil(leg: Any) -> dict[str, Any] | None:
         "nach": _halt(nach, an_plan, an, mit_gleis=art != FUSS),
         "dauer_min": _minuten(ab, an),
     }
+    weg = _weg(leg, von, nach)
+    if weg is not None:
+        teil["weg"] = weg
     if art == FUSS:
         strecke = leg.get("distance")
         if isinstance(strecke, (int, float)):
@@ -166,6 +178,86 @@ def _halt(ort: dict[str, Any], plan: str, echt: str, mit_gleis: bool = True) -> 
     if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
         halt["lat"], halt["lon"] = round(lat, 6), round(lon, 6)
     return halt
+
+
+def dekodiere(text: str, genauigkeit: int) -> list[tuple[float, float]]:
+    """Kodierte Polylinie (Verfahren von Google) → Punkte (Breite, Länge) in Dezimalgrad.
+
+    `genauigkeit` ist die Zahl der Nachkommastellen, mit der kodiert wurde. Wirft ValueError, wenn der Text keine
+    Polylinie ist oder mitten in einer Zahl endet.
+    """
+    teiler = 10 ** genauigkeit
+    punkte: list[tuple[float, float]] = []
+    werte = [0, 0]  # Breite und Länge als ganze Zahlen; jede Zahl im Text ist der Abstand zum Punkt davor
+    achse = 0
+    zahl = schub = 0
+    for zeichen in text:
+        stueck = ord(zeichen) - 63
+        if not 0 <= stueck <= 63:
+            raise ValueError("Zeichen gehört nicht zu einer Polylinie")
+        zahl |= (stueck & 0x1F) << schub
+        schub += 5
+        if stueck & 0x20:  # die Zahl geht im nächsten Zeichen weiter
+            if schub > 60:
+                raise ValueError("Zahl in der Polylinie ist zu lang")
+            continue
+        werte[achse] += ~(zahl >> 1) if zahl & 1 else zahl >> 1
+        zahl = schub = 0
+        if achse == 1:
+            punkte.append((werte[0] / teiler, werte[1] / teiler))
+        achse = 1 - achse
+    if schub or achse:
+        raise ValueError("Polylinie endet mitten in einem Punkt")
+    return punkte
+
+
+def duenne_aus(punkte: list[Any], hoechstens: int = MAX_PUNKTE) -> list[Any]:
+    """Höchstens `hoechstens` Punkte in gleichmäßigen Abständen; der erste und der letzte bleiben."""
+    anzahl = len(punkte)
+    if anzahl <= hoechstens or hoechstens < 2:
+        return list(punkte)
+    return [punkte[round(i * (anzahl - 1) / (hoechstens - 1))] for i in range(hoechstens)]
+
+
+def _punkt(lat: Any, lon: Any) -> list[float] | None:
+    """[Breite, Länge] auf fünf Nachkommastellen (etwa ein Meter); None bei unsinnigen Werten."""
+    for wert in (lat, lon):
+        if isinstance(wert, bool) or not isinstance(wert, (int, float)) or not math.isfinite(wert):
+            return None
+    if not -90 <= lat <= 90 or not -180 <= lon <= 180:
+        return None
+    return [round(lat, 5), round(lon, 5)]
+
+
+def _weg(leg: dict[str, Any], von: dict[str, Any], nach: dict[str, Any]) -> list[list[float]] | None:
+    """Streckenverlauf eines Abschnitts. Ohne brauchbare Geometrie die gerade Linie vom Einstieg zum Ausstieg,
+    ohne deren Koordinaten None. Wirft nie."""
+    try:
+        weg = _aus_geometrie(leg.get("legGeometry"))
+        if len(weg) >= 2:
+            return duenne_aus(weg)
+    except (ValueError, TypeError, OverflowError, ArithmeticError):
+        pass
+    start, ziel = _punkt(von.get("lat"), von.get("lon")), _punkt(nach.get("lat"), nach.get("lon"))
+    return [start, ziel] if start is not None and ziel is not None else None
+
+
+def _aus_geometrie(geometrie: Any) -> list[list[float]]:
+    """Punkte aus "legGeometry"; leer, wenn sie fehlt. Unsinnige Punkte und Doppelte in Folge fallen weg."""
+    if not isinstance(geometrie, dict):
+        return []
+    text, genauigkeit = geometrie.get("points"), geometrie.get("precision")
+    if not isinstance(text, str) or len(text) > MAX_POLYLINIE:
+        return []
+    # Die Genauigkeit wird nicht geraten: Mit der falschen läge der ganze Weg woanders.
+    if isinstance(genauigkeit, bool) or not isinstance(genauigkeit, int) or not 1 <= genauigkeit <= 9:
+        return []
+    weg: list[list[float]] = []
+    for lat, lon in dekodiere(text, genauigkeit):
+        punkt = _punkt(lat, lon)
+        if punkt is not None and (not weg or weg[-1] != punkt):
+            weg.append(punkt)
+    return weg
 
 
 def _text(wert: Any) -> str | None:

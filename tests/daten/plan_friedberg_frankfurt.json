@@ -1,0 +1,271 @@
+{
+ "requestParameters": {},
+ "from": {
+  "name": "START",
+  "lat": 50.332,
+  "lon": 8.7607,
+  "level": 0.0,
+  "vertexType": "NORMAL"
+ },
+ "to": {
+  "name": "END",
+  "lat": 50.1071,
+  "lon": 8.6638,
+  "level": 0.0,
+  "vertexType": "NORMAL"
+ },
+ "itineraries": [
+  {
+   "duration": 1560,
+   "startTime": "2026-11-22T18:49:00Z",
+   "endTime": "2026-11-22T19:15:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 50.332,
+      "lon": 8.7607,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "departure": "2026-11-22T18:49:00Z",
+      "scheduledDeparture": "2026-11-22T18:49:00Z",
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Friedberg (Hessen) Bahnhof",
+      "stopId": "de-DELFI_de:06440:6401",
+      "importance": 0.004269337747246027,
+      "lat": 50.332862999999996,
+      "lon": 8.760917999999998,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "arrival": "2026-11-22T18:52:00Z",
+      "scheduledArrival": "2026-11-22T18:52:00Z",
+      "vertexType": "TRANSIT",
+      "modes": [
+       "HIGHSPEED_RAIL",
+       "REGIONAL_RAIL",
+       "SUBURBAN",
+       "BUS",
+       "ODM"
+      ]
+     },
+     "duration": 180,
+     "startTime": "2026-11-22T18:49:00Z",
+     "endTime": "2026-11-22T18:52:00Z",
+     "scheduledStartTime": "2026-11-22T18:49:00Z",
+     "scheduledEndTime": "2026-11-22T18:52:00Z",
+     "realTime": false,
+     "scheduled": false,
+     "distance": 166.0,
+     "legGeometry": {
+      "points": "ale__]su`bfDqi@n[??sWkt@??}TmV??s`AeIod@zV??_Ma}@??gbC`pAkN|s@~`@nsB??}qA|w@??gLaU??jCi]??q\\ggB??}Tqe@??eQe{@??mAaH??yf@ssC??yIzE??{Q`K",
+      "precision": 7,
+      "length": 35
+     }
+    },
+    {
+     "mode": "REGIONAL_RAIL",
+     "from": {
+      "name": "Friedberg (Hessen) Bahnhof",
+      "stopId": "de-DELFI_de:06440:6401",
+      "importance": 0.004269337747246027,
+      "lat": 50.332862999999996,
+      "lon": 8.760917999999998,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "departure": "2026-11-22T18:52:00Z",
+      "scheduledDeparture": "2026-11-22T18:46:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false,
+      "arrivalTimestampReason": "PROPAGATED",
+      "departureTimestampReason": "PROPAGATED",
+      "modes": [
+       "HIGHSPEED_RAIL",
+       "REGIONAL_RAIL",
+       "SUBURBAN",
+       "BUS",
+       "ODM"
+      ]
+     },
+     "to": {
+      "name": "Frankfurt (Main) Hauptbahnhof",
+      "stopId": "de-DELFI_de:06412:10_G",
+      "importance": 0.032895371317863464,
+      "lat": 50.10668,
+      "lon": 8.662828,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "arrival": "2026-11-22T19:13:00Z",
+      "scheduledArrival": "2026-11-22T19:09:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false,
+      "arrivalTimestampReason": "PROPAGATED",
+      "modes": [
+       "HIGHSPEED_RAIL",
+       "LONG_DISTANCE",
+       "COACH",
+       "NIGHT_RAIL",
+       "RIDE_SHARING",
+       "REGIONAL_RAIL",
+       "SUBURBAN",
+       "SUBWAY",
+       "TRAM",
+       "BUS"
+      ]
+     },
+     "duration": 1260,
+     "startTime": "2026-11-22T18:52:00Z",
+     "endTime": "2026-11-22T19:13:00Z",
+     "scheduledStartTime": "2026-11-22T18:46:00Z",
+     "scheduledEndTime": "2026-11-22T19:09:00Z",
+     "realTime": true,
+     "scheduled": true,
+     "interlineWithPreviousLeg": false,
+     "headsign": "Frankfurt (Main) Hauptbahnhof",
+     "tripFrom": {
+      "name": "Gießen Bahnhof",
+      "stopId": "de-DELFI_de:06531:11016",
+      "importance": 0.004118027631193399,
+      "lat": 50.57906,
+      "lon": 8.661462,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "departure": "2026-11-22T18:23:00Z",
+      "scheduledDeparture": "2026-11-22T18:22:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false,
+      "arrivalTimestampReason": "PREDICTED",
+      "departureTimestampReason": "INCONSISTENT_RT",
+      "modes": [
+       "HIGHSPEED_RAIL",
+       "REGIONAL_RAIL",
+       "BUS",
+       "ODM"
+      ]
+     },
+     "tripTo": {
+      "name": "Frankfurt (Main) Hauptbahnhof",
+      "stopId": "de-DELFI_de:06412:10_G",
+      "importance": 0.032895371317863464,
+      "lat": 50.10668,
+      "lon": 8.662828,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "arrival": "2026-11-22T19:13:00Z",
+      "scheduledArrival": "2026-11-22T19:09:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false,
+      "arrivalTimestampReason": "PROPAGATED",
+      "modes": [
+       "HIGHSPEED_RAIL",
+       "LONG_DISTANCE",
+       "COACH",
+       "NIGHT_RAIL",
+       "RIDE_SHARING",
+       "REGIONAL_RAIL",
+       "SUBURBAN",
+       "SUBWAY",
+       "TRAM",
+       "BUS"
+      ]
+     },
+     "routeId": "de-DELFI_5587115_100",
+     "routeUrl": "",
+     "directionId": "0",
+     "routeColor": "970c7e",
+     "routeTextColor": "ffffff",
+     "routeType": 100,
+     "agencyName": "Hessische Landesbahn GmbH",
+     "agencyUrl": "",
+     "agencyFareUrl": "",
+     "agencyId": "11046",
+     "tripId": "20261122_19:22_de-DELFI_3490109122",
+     "routeShortName": "RB40",
+     "routeLongName": "",
+     "tripShortName": "024861",
+     "displayName": "RB40",
+     "cancelled": false,
+     "source": "de_DELFI.gtfs.zip/stop_times.txt:51054607:51054619",
+     "intermediateStops": [
+      {
+       "name": "Frankfurt (Main) Westbahnhof"
+      }
+     ],
+     "legGeometry": {
+      "points": "kbw__]qchbfDliC}uAt{`@{{S|vK{`GbhEmkC`yByyAtgDkaCbcBuoAlh@k`@|MyKzrA}eAltDkzCr{DclDf{AmwAnzA}{Azr@qt@t}CetDzhDomExzDybGjqCacFjdAqqBlqDcqHbrAc_Ddh@e{AjrGmkQfnB_oF`wCqxHfaBuyD~~@sxBzeDaiHvhFwiJjbFohHvsDapEfkA{pAzzGgpHfj^}z^p{qA}fsAttm@gkn@~y@mx@z}e@wuf@j]}]v|OkaP|aQciQf|Om}O~nHgzGlxH_jGnoHmkFlpJq~FzuGsiD~bGq|C`gG_jCx`HyfChnGusBltIe`CzbKcuBzgKcdB|gIm}@|cJim@fsIcZr`LmF~jAGhlI`NdfGn[v}K|~@lxKf`BpgJ|cBzaIplB~pKvcDjiIv}CvtFb`C`~GxeDnkFbuC~pMd~HjyNztKfqGvwFjnMvbM`|OhoR`|hA`q}AtmRr{W~zm@fe{@xei@bbu@j{I~|Ln~ApzB|rd@jmo@b~AnrBb}Ij~LdvFvzHt`K~mNxbDflEbsCfoDhuC|kDz_DthDz_DzwCzpBbiBtrCb~BbtE~hDt`DxrBz{CjoBnzH`jEhxBjfAvdD~|AxmCxlAb~ChpA~zE~fBxjOlcFdbDh_AlqIraCdkH|zB~cdApp[`jRp~FhjPrbFhs@lTnd~@v{X`~HxaCdv@nUpr^v{KpqVjqHvfSfhGtlHpzBfgZbhJ`hn@lpR~f_@n{KjiLroDhgSzcGlpNflE~cNleEbqEdmAztFdoAlcFjbA`bFnq@deFtd@dgFxYblEdLldEhAlyHqDfhL_q@zhLev@r`yAm_JdouAe~JxdNyv@dzE_Yx_c@wiCj}Jkq@bcOi~@`q[_mBroNa`Ady`@}rC~zV_~Ax}Hug@roKos@vbBgIl~K}s@`|Fua@taUkwAv{AgKnkAcIpeAiH`kZ}rBh~@cGreIoe@ve[euBxaIsk@hcD}UftY_hBhkPmeApwEeTdjGgHhhAs@zrIfMzlHnd@fdEzd@|zCla@hkInaBdc@jLf~@hVdlC`s@zpG|xBxyAhm@`hEviB|wI~uE~sHp}EzvHreG`lAf_ApiA|z@pqHnuFjbGv}EzhEjlDrIbHbrIfbH~}B`lBhlKloI~xDxzCx_@nZtvDzxCjaHfrFlaN`xKv`@r[daA`w@z_VrfRbgEnlDjgLhoJl{FzcFl`DzwChuAzsAnvMfgMj{FphF~cCdqBbxI`hGb`DzlBf~@df@boBz_AnqDvdBrjCv`An}RhoH|JlD`EdBv}SbpHxaAt\\n_LpxD|gHvhCvS~Hj_@tMtb[`uKvJhDxyDfxAh_KhyDtRhI|yHp~Cbi_@jxNvgI|uCnbA~]vh^leMb|J`kDt`^j}LxyCzbAl|U~bJr{FtkBhvEp~Axg@hPdyIdrC|aM`bEhde@rsO~IzBhoC`z@zaHzrC`~Ads@rqBdnAjeCnlBvuA~lA|~CbzCxqBtkC|uBj|C`lBb`DvnC`jF~sAd~CvdB~uEfy@z}Bbx@t}Bl`Br|E|wA`vEpwAtxE|r@h_Cv_AnnDpcAhjEj_AxiE|q@hqDzg@~gDne@t|D|`@vhEtS`vC`PrrCtJt~BvIphDrF`fDn@|kDm@fgDsCzfEaIfuDq^dlNkhBrfr@kkCtp}@ktMrxlEwfAzg^a]hpLoMhpFgHjjEqHxxHCpxIlQj`Obd@j}NzXtjFbjAh~NvgAhlKz~Bn`P|aC`~Ll{BzpJxeEhrO`xBdsGhtBndFvbAjeC`mBvhElw@b}A~`CxqEpyB|sDd{BngDjjCfoDblCzgDdyAf`B|jCbsCxqF~cFhvLzgKtoHdyGx~Cf}C`cCrhC`yBtjCnqD|}Ez{FpiIxj@x{@t}FveLpiGrgOj|E|hOn|C~qL|eDbsPj~BzqO|cBl}O~nAxyQng@vdMnZteR`DprW}DjoPqF`wOas@ligAmObfUi`@p{k@_L``RiEvpL{@llIjDbdIf_@bgM|h@f|O`h@pjI`_@xdFbq@thGh}@n`HzcB`~K`sCxsNbfCv`KtxBtaIvyDrcLteCjmGp`ElvIvnAtbCloD|fGj{Dl`GxaEvnFv~ClxDvzAlaBraF~yEpuFhzE`dGp{EzoJxtHpmKfkIj|\\d`Xx`GzvEpxFbiEpxPhlNn~[psYdpJ`|HtqY|uSzuEzlDnvO`~LltBfmBnbJh{GxzBhfB|auAdegA~rpA`mcAfuLnjKpfEnqD|sE~iDzuEb`DrwCnjBdzAjz@pe@lWbqA~r@|u]x_PlcHz~CryTb}JfaD~vAhnj@hkWtkArj@tdFr|BvpYfoMzcNnhGdvJjjEjtHziDloNpeG~xExiBd|A`l@l}DduA~_GfrBpgCz}@hnIjbDxvLreFbxV|{KpyH`lDzdFn}BjxAbp@`DxAzpW~sM|p@h]plTrdL~hA~k@tiElzBn\\dQ`bKbwE`rCncAf_@~MlgC`n@|dCpd@ppBdVvwBdRhuBzGzmBGxlEsKpqAsO~zAoQ`nDkq@z`Ds|@loEkjBtdE_aCnE}CnnBqsAloBsdBjxBgqBlHmIrcBinBdwBcnCvpBoxCrzAihCzzA_pC`u@oyAb{AeyCzxAmuCjqJg~RpcFoiKlJyRzbBmkDzoDgpHf}F{bLd{AgwC`B{CnPqZpxIstPb}D_xHxaCcnEzEkIpz@myAt_ByhCpwAgwBjrB{eCfeAwmAzhBwhB`aB}wAfe@c`@fx@ml@r|@ch@dz@yi@vz@}]~dA{f@hoB_s@zpBsm@x|Dww@l_EqYdrDmKnvDkCrJGfrIkEraIuBbpLuD|DE`kY}IzrByAvhGeCrbDy@|sFgBfcCgB||JuBzbNkG|jJ}BpIE|_Q_H~FEbdAy@fiLqFtgAqBnjDmMdpBqSrtAsMr}Au]dvE}lAphB}m@~t@i[ntBwaAffBsbAp`D_vBpdB_tAnrCmdChhDi`D~QuQlEmEvuAcrArkD_cDrvBm}Bf|@gaAjuAmjBr`@yh@p\\ag@~lBwgDzoA_oCz~@ocCn`B{gFx^iyArY}tA~SehArPubAbUuxAzRiyA|P}~AtOceBbGcy@hGodApI_dBdG{uB|CupBt@wbDkBylC_IsoC}GefBqMcoBgS{fCa^s`Dg]s}Beb@qdCopAotGcmBiwHm|Am_GebBm}Fo~BmfIgoBklHq@eCa`J_o[_rBahHaCoIkdEipNo|@o|CqLga@yl@s`Cir@ymDmm@{aCgU}z@erAgcFcgAupFinBc{GaDmLy`B}xFebAiiDqE_OgbBm_GiLia@uiByjG{qAq_FaoAmqEoNwg@o_AqfDyaDidLwyDi{Moi@{jB",
+      "precision": 7,
+      "length": 577
+     },
+     "bikesAllowed": false,
+     "wheelchairAccessible": "NOT_ACCESSIBLE",
+     "reservation": "NONE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Frankfurt (Main) Hauptbahnhof",
+      "stopId": "de-DELFI_de:06412:10_G",
+      "importance": 0.032895371317863464,
+      "lat": 50.10668,
+      "lon": 8.662828,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "arrival": "2026-11-22T19:13:00Z",
+      "departure": "2026-11-22T19:13:00Z",
+      "scheduledArrival": "2026-11-22T19:09:00Z",
+      "scheduledDeparture": "2026-11-22T19:13:00Z",
+      "vertexType": "TRANSIT",
+      "cancelled": false,
+      "arrivalTimestampReason": "PROPAGATED",
+      "modes": [
+       "HIGHSPEED_RAIL",
+       "LONG_DISTANCE",
+       "COACH",
+       "NIGHT_RAIL",
+       "RIDE_SHARING",
+       "REGIONAL_RAIL",
+       "SUBURBAN",
+       "SUBWAY",
+       "TRAM",
+       "BUS"
+      ]
+     },
+     "to": {
+      "name": "END",
+      "lat": 50.1071,
+      "lon": 8.6638,
+      "level": 0.0,
+      "tz": "Europe/Berlin",
+      "arrival": "2026-11-22T19:15:00Z",
+      "scheduledArrival": "2026-11-22T19:15:00Z",
+      "vertexType": "NORMAL"
+     },
+     "duration": 120,
+     "startTime": "2026-11-22T19:13:00Z",
+     "endTime": "2026-11-22T19:15:00Z",
+     "scheduledStartTime": "2026-11-22T19:13:00Z",
+     "scheduledEndTime": "2026-11-22T19:15:00Z",
+     "realTime": false,
+     "scheduled": false,
+     "distance": 97.0,
+     "legGeometry": {
+      "points": "guuuz\\chjfdD_~@k_D??kYfW??qKg]??gm@euB??bj@_h@??ikBmjG??gGkS??yHeW",
+      "precision": 7,
+      "length": 16
+     }
+    }
+   ]
+  }
+ ]
+}

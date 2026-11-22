@@ -50,7 +50,8 @@ Antwort (gekürzt):
           "zwischenhalte": 2,
           "dauer_min": 25,
           "von": {"name": "Bahnhof Nord", "plan": "2026-01-31T09:14:00Z", "zeit": "2026-01-31T09:17:00Z", "gleis": "3", "gleis_plan": "2"},
-          "nach": {"name": "Hauptstadt Hbf", "plan": "2026-01-31T09:40:00Z", "zeit": "2026-01-31T09:42:00Z", "gleis": "14"}
+          "nach": {"name": "Hauptstadt Hbf", "plan": "2026-01-31T09:40:00Z", "zeit": "2026-01-31T09:42:00Z", "gleis": "14"},
+          "weg": [[50.33288, 8.76099], [50.32976, 8.76298], [50.10670, 8.66281]]
         }
       ]
     }
@@ -64,6 +65,10 @@ Antwort (gekürzt):
   dass es von der Tafel stammt; `gleis_plan` nennt bei einem Gleiswechsel das ursprüngliche Gleis.
 - Kein Gleis gibt es für U-Bahn, Straßenbahn und Bus, für Ankünfte und für Fahrten, die mehr als drei Stunden
   voraus liegen: So weit reichen die Tafeln nicht.
+- `weg` ist der Streckenverlauf eines Teils, damit die App die Verbindung auf der Karte zeichnen kann: Punkte
+  `[Breite, Länge]` in Dezimalgrad mit fünf Nachkommastellen, vom Einstieg zum Ausstieg, höchstens 120 je Teil
+  (längere Verläufe sind gleichmäßig ausgedünnt). Fußwege folgen den Wegen, Züge und Busse ihrer Strecke. Kennt
+  Transitous den Verlauf nicht, sind es nur die zwei Endpunkte; fehlen auch deren Koordinaten, fehlt das Feld.
 
 `GET /status` (ohne Schlüssel) nennt Version, Quellen und die Zahl der Abfragen der letzten Stunde, getrennt nach
 Transitous und Bahnhofstafeln.
