@@ -69,6 +69,25 @@ Antwort (gekürzt):
   `[Breite, Länge]` in Dezimalgrad mit fünf Nachkommastellen, vom Einstieg zum Ausstieg, höchstens 120 je Teil
   (längere Verläufe sind gleichmäßig ausgedünnt). Fußwege folgen den Wegen, Züge und Busse ihrer Strecke. Kennt
   Transitous den Verlauf nicht, sind es nur die zwei Endpunkte; fehlen auch deren Koordinaten, fehlt das Feld.
+- `angepasst: "frueher_aussteigen"` steht an einer Verbindung, wenn der Dienst den Ausstieg vorverlegt hat, siehe
+  unten. Sonst fehlt das Feld.
+
+### Früher aussteigen
+
+Transitous lässt die letzte Fahrt manchmal einen Halt zu weit laufen und schickt den Fahrgast dann zu Fuß zurück,
+weil es den Fußweg vom näheren Halt nicht kennt. Folgt auf die letzte Fahrt nur noch ein Fußweg zum Ziel, prüft der
+Dienst deshalb jeden Zwischenhalt dieser Fahrt:
+
+- Der Fußweg vom Zwischenhalt zum Ziel wird aus der Luftlinie geschätzt: Länge mal 1,3, Tempo 1,25 m/s, auf volle
+  Minuten aufgerundet, mindestens eine Minute.
+- Der Ausstieg wandert zu diesem Halt, wenn man dadurch mindestens zwei Minuten früher am Ziel ist, oder nicht später
+  und mindestens 300 m weniger läuft. Bei mehreren Halten gewinnt die früheste Ankunft, dann der kürzere Fußweg.
+- Die Fahrt endet dann an diesem Halt (Zeiten, Gleis, `zwischenhalte` und `weg` passen dazu), der Fußweg danach ist
+  die gerade Linie zum Ziel mit geschätzter Länge und Dauer, `an` und `dauer_min` der Verbindung sind neu gerechnet.
+- Ausgefallene Fahrten und Halte ohne Koordinaten, ohne Ankunftszeit oder ohne Ausstieg bleiben außen vor. Später
+  als von Transitous genannt kommt eine angepasste Verbindung nie an.
+
+Mit `FRUEHER_AUSSTEIGEN=0` liefert der Dienst jede Verbindung so, wie Transitous sie nennt.
 
 `GET /status` (ohne Schlüssel) nennt Version, Quellen und die Zahl der Abfragen der letzten Stunde, getrennt nach
 Transitous und Bahnhofstafeln.
@@ -114,6 +133,7 @@ KONTAKT=du@example.org ZUGANG_SCHLUESSEL=<mindestens16Zeichen> python -m fahrpla
 | `TRANSITOUS_URL` | Standard `https://api.transitous.org`; für eine eigene MOTIS-Instanz |
 | `TAFEL_URL` | Standard `https://dbf.finalrewind.org`; für eine eigene DBF-Instanz |
 | `OHNE_TAFEL=1` | Kein Gleis von den Bahnhofstafeln |
+| `FRUEHER_AUSSTEIGEN=0` | Den Ausstieg nie vorverlegen; Standard ist an |
 
 Mit Docker: `docker build -t fahrplan-dienst .`, dann mit denselben Werten als Umgebung starten.
 Für CapRover liegt eine `captain-definition` bei.

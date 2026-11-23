@@ -10,6 +10,8 @@
                       Das Gleis von Zügen und S-Bahnen kommt, wo Transitous es nicht kennt, aus den Bahnhofstafeln
                       (tafel.py); die Haltestelle trägt dann "gleis_quelle".
                       Jedes Teilstück trägt seinen Streckenverlauf als "weg": [[Breite, Länge], …], höchstens 120.
+                      Endet die letzte Fahrt besser an einem früheren Halt, steigt die Verbindung dort aus und
+                      trägt "angepasst": "frueher_aussteigen" (abschaltbar mit FRUEHER_AUSSTEIGEN=0).
 
 Fehler kommen als {"fehler": "<Text>"} mit 400 (Werte), 401 (Schlüssel), 429 (eigene Grenze je Stunde),
 502/503/504 (Transitous). Gleiche Abfragen innerhalb einer Minute kommen aus dem Zwischenspeicher.
@@ -102,7 +104,8 @@ class Dienst:
             self._abfragen.append(jetzt)
         try:
             # Transitous liefert oft mehr als gewünscht; mehr als gefragt geht nicht weiter.
-            ergebnis = transitous.forme_um(self._hole(url, self.konfig.kontakt))[:anzahl]
+            ziel = nach if self.konfig.frueher_aussteigen else None
+            ergebnis = transitous.forme_um(self._hole(url, self.konfig.kontakt), ziel)[:anzahl]
         except transitous.QuelleFehler as fehler:
             raise Abgelehnt(fehler.status, str(fehler)) from None
         if self.tafeln is not None:
@@ -166,6 +169,7 @@ def baue_server(dienst: Dienst, host: str, port: int) -> ThreadingHTTPServer:
                     "max_je_stunde": dienst.konfig.max_je_stunde,
                     "gleis_quelle": "Bahnhofstafeln (DBF)" if dienst.tafeln is not None else None,
                     "tafeln_letzte_stunde": dienst.tafeln.abfragen_letzte_stunde() if dienst.tafeln else 0,
+                    "frueher_aussteigen": dienst.konfig.frueher_aussteigen,
                 })
                 return
             if teile.path != "/verbindungen":

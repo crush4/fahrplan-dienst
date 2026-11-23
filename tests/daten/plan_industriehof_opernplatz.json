@@ -1,0 +1,443 @@
+{
+ "requestParameters": {},
+ "from": {
+  "name": "START",
+  "lat": 50.128616,
+  "lon": 8.629713,
+  "level": 0.0,
+  "vertexType": "NORMAL"
+ },
+ "to": {
+  "name": "END",
+  "lat": 50.1157,
+  "lon": 8.6717,
+  "level": 0.0,
+  "vertexType": "NORMAL"
+ },
+ "itineraries": [
+  {
+   "duration": 1080,
+   "startTime": "2026-11-23T06:53:00Z",
+   "endTime": "2026-11-23T07:11:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 50.128616,
+      "lon": 8.629713,
+      "level": 0.0,
+      "departure": "2026-11-23T06:53:00Z",
+      "scheduledDeparture": "2026-11-23T06:53:00Z",
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Frankfurt (Main) Industriehof",
+      "lat": 50.12861600000001,
+      "lon": 8.629712999999999,
+      "level": 1.0,
+      "arrival": "2026-11-23T06:54:00Z",
+      "scheduledArrival": "2026-11-23T06:54:00Z",
+      "vertexType": "TRANSIT"
+     },
+     "duration": 60,
+     "startTime": "2026-11-23T06:53:00Z",
+     "endTime": "2026-11-23T06:54:00Z",
+     "scheduledStartTime": "2026-11-23T06:53:00Z",
+     "scheduledEndTime": "2026-11-23T06:54:00Z",
+     "realTime": false,
+     "scheduled": false,
+     "distance": 0.0,
+     "legGeometry": {
+      "points": "_pac{\\sadrcD??",
+      "precision": 7,
+      "length": 2
+     }
+    },
+    {
+     "mode": "SUBWAY",
+     "from": {
+      "name": "Frankfurt (Main) Industriehof",
+      "lat": 50.12861600000001,
+      "lon": 8.629712999999999,
+      "level": 1.0,
+      "departure": "2026-11-23T06:54:00Z",
+      "scheduledDeparture": "2026-11-23T06:54:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false
+     },
+     "to": {
+      "name": "Frankfurt (Main) Hauptwache",
+      "lat": 50.113845999999995,
+      "lon": 8.67869,
+      "level": -3.0,
+      "arrival": "2026-11-23T07:01:00Z",
+      "scheduledArrival": "2026-11-23T07:01:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false
+     },
+     "duration": 420,
+     "startTime": "2026-11-23T06:54:00Z",
+     "endTime": "2026-11-23T07:01:00Z",
+     "scheduledStartTime": "2026-11-23T06:54:00Z",
+     "scheduledEndTime": "2026-11-23T07:01:00Z",
+     "realTime": true,
+     "scheduled": true,
+     "interlineWithPreviousLeg": false,
+     "headsign": "Frankfurt (Main) Ostbahnhof",
+     "routeId": "de-DELFI_de:rmv:00000901:_1",
+     "routeUrl": "",
+     "directionId": "0",
+     "routeColor": "0082ca",
+     "routeTextColor": "ffffff",
+     "routeType": 1,
+     "agencyName": "Stadtwerke Verkehrsgesellschaft Frankfurt",
+     "agencyUrl": "",
+     "agencyFareUrl": "",
+     "agencyId": "8639",
+     "tripId": "20261123_07:50_de-DELFI_3031889926",
+     "routeShortName": "U6",
+     "routeLongName": "",
+     "tripShortName": "60002",
+     "displayName": "U6",
+     "cancelled": false,
+     "source": "de_DELFI.gtfs.zip/stop_times.txt:7907187:7907198",
+     "intermediateStops": [
+      {
+       "name": "Frankfurt (Main) Kirchplatz",
+       "lat": 50.12510700000001,
+       "lon": 8.637402999999999,
+       "level": -2.0,
+       "arrival": "2026-11-23T06:55:00Z",
+       "departure": "2026-11-23T06:55:00Z",
+       "scheduledArrival": "2026-11-23T06:55:00Z",
+       "scheduledDeparture": "2026-11-23T06:55:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Leipziger Straße",
+       "lat": 50.12258500000001,
+       "lon": 8.645700999999999,
+       "level": -2.0,
+       "arrival": "2026-11-23T06:56:00Z",
+       "departure": "2026-11-23T06:56:00Z",
+       "scheduledArrival": "2026-11-23T06:56:00Z",
+       "scheduledDeparture": "2026-11-23T06:56:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Bockenheimer Warte",
+       "lat": 50.11997,
+       "lon": 8.653117,
+       "level": -2.0,
+       "arrival": "2026-11-23T06:57:00Z",
+       "departure": "2026-11-23T06:57:00Z",
+       "scheduledArrival": "2026-11-23T06:57:00Z",
+       "scheduledDeparture": "2026-11-23T06:57:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Westend",
+       "lat": 50.11815300000001,
+       "lon": 8.662512000000001,
+       "level": -2.0,
+       "arrival": "2026-11-23T06:59:00Z",
+       "departure": "2026-11-23T06:59:00Z",
+       "scheduledArrival": "2026-11-23T06:59:00Z",
+       "scheduledDeparture": "2026-11-23T06:59:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Alte Oper",
+       "lat": 50.115314000000005,
+       "lon": 8.670850999999999,
+       "level": -2.0,
+       "arrival": "2026-11-23T07:00:00Z",
+       "departure": "2026-11-23T07:00:00Z",
+       "scheduledArrival": "2026-11-23T07:00:00Z",
+       "scheduledDeparture": "2026-11-23T07:00:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      }
+     ],
+     "legGeometry": {
+      "points": "idbc{\\yfercDxg@ku@~bFo}HzlCm_ErrAcuB`dC_bEfr@anA|rEo}Hn_CalEr{@{lBnc@ceAn[c~@`b@cvAbtE}rQj|A_dGhnF{kUvrEmgRtqFsaUdXgcA~eBwuGj_DwsMhjCqaM`rAgwHn|Hged@vrA_aIfeA{xEvyEosSvgAawEptB{aJxcEs{QjEyRfWijAtt@{eD|e@w{Bjn@gfCl}@ufDxc@owAtz@upBz~@{oBhp@_|A|cAm~BpcKgsRpfHkuN~sA{mDt_AqgD~_Ak_Exa@}uBlg@_mDx`@krDl[itDpa@g{FtUyuEvKwrCpZc_JtJ{nDfBqo@vE_eBfOetFzV{eZh@co@lAgaEjBybBfNmpGtRw|EfIywApP}cB|PabB`Ru~AzXm~B`YmgC~`Au|Gp{C{dQ|mDs}RfdD}vQphDazPtcDq`Onc@wpBx|DmvMzgDa{JpnOwkj@ljNs`k@pvEarVfgD_aTx]ozBjvA{~JlzAq|Kfz@_kGrbCcoRrtBk~OjzC_oUjiBihO`p@c~Mns@g}PvRoxF",
+      "precision": 7,
+      "length": 94
+     },
+     "bikesAllowed": false,
+     "wheelchairAccessible": "NOT_ACCESSIBLE",
+     "reservation": "NONE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Frankfurt (Main) Hauptwache",
+      "lat": 50.113845999999995,
+      "lon": 8.67869,
+      "level": -3.0,
+      "arrival": "2026-11-23T07:01:00Z",
+      "departure": "2026-11-23T07:01:00Z",
+      "scheduledArrival": "2026-11-23T07:01:00Z",
+      "scheduledDeparture": "2026-11-23T07:01:00Z",
+      "vertexType": "TRANSIT",
+      "cancelled": false
+     },
+     "to": {
+      "name": "END",
+      "lat": 50.1157,
+      "lon": 8.6717,
+      "level": 0.0,
+      "arrival": "2026-11-23T07:11:00Z",
+      "scheduledArrival": "2026-11-23T07:11:00Z",
+      "vertexType": "NORMAL"
+     },
+     "duration": 600,
+     "startTime": "2026-11-23T07:01:00Z",
+     "endTime": "2026-11-23T07:11:00Z",
+     "scheduledStartTime": "2026-11-23T07:01:00Z",
+     "scheduledEndTime": "2026-11-23T07:11:00Z",
+     "realTime": false,
+     "scheduled": false,
+     "distance": 659.0,
+     "legGeometry": {
+      "points": "_~`zz\\ws`pdDxK_rD??_K_A??aBrg@??iNruD??jHnD??eLxm@??gVrbA??eo@r}C??{_@cF??{n@mI??sVpkJd@pwIlU|~E??mUnaD??uUhqB??Fdr@??uRncB??qVpeA??}i@mT??koA|yK??ktAnjM??gw@jsG??}PbwA??_Er\\??}o@`eF??yvAf`L??yC|U??uJhv@??mU~e@??cuAlpD??aGj^??mb@~xC??gT|oA??c^puB??u~@~{F??w~DqD",
+      "precision": 7,
+      "length": 70
+     }
+    }
+   ]
+  },
+  {
+   "duration": 1080,
+   "startTime": "2026-11-23T07:00:00Z",
+   "endTime": "2026-11-23T07:18:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 50.128616,
+      "lon": 8.629713,
+      "level": 0.0,
+      "departure": "2026-11-23T07:00:00Z",
+      "scheduledDeparture": "2026-11-23T07:00:00Z",
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Frankfurt (Main) Industriehof",
+      "lat": 50.12861600000001,
+      "lon": 8.629712999999999,
+      "level": 1.0,
+      "arrival": "2026-11-23T07:01:00Z",
+      "scheduledArrival": "2026-11-23T07:01:00Z",
+      "vertexType": "TRANSIT"
+     },
+     "duration": 60,
+     "startTime": "2026-11-23T07:00:00Z",
+     "endTime": "2026-11-23T07:01:00Z",
+     "scheduledStartTime": "2026-11-23T07:00:00Z",
+     "scheduledEndTime": "2026-11-23T07:01:00Z",
+     "realTime": false,
+     "scheduled": false,
+     "distance": 0.0,
+     "legGeometry": {
+      "points": "_pac{\\sadrcD??",
+      "precision": 7,
+      "length": 2
+     }
+    },
+    {
+     "mode": "SUBWAY",
+     "from": {
+      "name": "Frankfurt (Main) Industriehof",
+      "lat": 50.12861600000001,
+      "lon": 8.629712999999999,
+      "level": 1.0,
+      "departure": "2026-11-23T07:01:00Z",
+      "scheduledDeparture": "2026-11-23T07:01:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false
+     },
+     "to": {
+      "name": "Frankfurt (Main) Hauptwache",
+      "lat": 50.113845999999995,
+      "lon": 8.67869,
+      "level": -3.0,
+      "arrival": "2026-11-23T07:08:00Z",
+      "scheduledArrival": "2026-11-23T07:08:00Z",
+      "vertexType": "TRANSIT",
+      "pickupType": "NORMAL",
+      "dropoffType": "NORMAL",
+      "cancelled": false
+     },
+     "duration": 420,
+     "startTime": "2026-11-23T07:01:00Z",
+     "endTime": "2026-11-23T07:08:00Z",
+     "scheduledStartTime": "2026-11-23T07:01:00Z",
+     "scheduledEndTime": "2026-11-23T07:08:00Z",
+     "realTime": true,
+     "scheduled": true,
+     "interlineWithPreviousLeg": false,
+     "headsign": "Frankfurt (Main) Ostbahnhof",
+     "routeId": "de-DELFI_de:rmv:00000901:_1",
+     "routeUrl": "",
+     "directionId": "0",
+     "routeColor": "0082ca",
+     "routeTextColor": "ffffff",
+     "routeType": 1,
+     "agencyName": "Stadtwerke Verkehrsgesellschaft Frankfurt",
+     "agencyUrl": "",
+     "agencyFareUrl": "",
+     "agencyId": "8639",
+     "tripId": "20261123_07:57_de-DELFI_3031889927",
+     "routeShortName": "U6",
+     "routeLongName": "",
+     "tripShortName": "60002",
+     "displayName": "U6",
+     "cancelled": false,
+     "source": "de_DELFI.gtfs.zip/stop_times.txt:7907199:7907210",
+     "intermediateStops": [
+      {
+       "name": "Frankfurt (Main) Kirchplatz",
+       "lat": 50.12510700000001,
+       "lon": 8.637402999999999,
+       "level": -2.0,
+       "arrival": "2026-11-23T07:02:00Z",
+       "departure": "2026-11-23T07:02:00Z",
+       "scheduledArrival": "2026-11-23T07:02:00Z",
+       "scheduledDeparture": "2026-11-23T07:02:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Leipziger Straße",
+       "lat": 50.12258500000001,
+       "lon": 8.645700999999999,
+       "level": -2.0,
+       "arrival": "2026-11-23T07:03:00Z",
+       "departure": "2026-11-23T07:03:00Z",
+       "scheduledArrival": "2026-11-23T07:03:00Z",
+       "scheduledDeparture": "2026-11-23T07:03:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Bockenheimer Warte",
+       "lat": 50.11997,
+       "lon": 8.653117,
+       "level": -2.0,
+       "arrival": "2026-11-23T07:04:00Z",
+       "departure": "2026-11-23T07:04:00Z",
+       "scheduledArrival": "2026-11-23T07:04:00Z",
+       "scheduledDeparture": "2026-11-23T07:04:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Westend",
+       "lat": 50.11815300000001,
+       "lon": 8.662512000000001,
+       "level": -2.0,
+       "arrival": "2026-11-23T07:06:00Z",
+       "departure": "2026-11-23T07:06:00Z",
+       "scheduledArrival": "2026-11-23T07:06:00Z",
+       "scheduledDeparture": "2026-11-23T07:06:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      },
+      {
+       "name": "Frankfurt (Main) Alte Oper",
+       "lat": 50.115314000000005,
+       "lon": 8.670850999999999,
+       "level": -2.0,
+       "arrival": "2026-11-23T07:07:00Z",
+       "departure": "2026-11-23T07:07:00Z",
+       "scheduledArrival": "2026-11-23T07:07:00Z",
+       "scheduledDeparture": "2026-11-23T07:07:00Z",
+       "vertexType": "TRANSIT",
+       "pickupType": "NORMAL",
+       "dropoffType": "NORMAL",
+       "cancelled": false
+      }
+     ],
+     "legGeometry": {
+      "points": "idbc{\\yfercDxg@ku@~bFo}HzlCm_ErrAcuB`dC_bEfr@anA|rEo}Hn_CalEr{@{lBnc@ceAn[c~@`b@cvAbtE}rQj|A_dGhnF{kUvrEmgRtqFsaUdXgcA~eBwuGj_DwsMhjCqaM`rAgwHn|Hged@vrA_aIfeA{xEvyEosSvgAawEptB{aJxcEs{QjEyRfWijAtt@{eD|e@w{Bjn@gfCl}@ufDxc@owAtz@upBz~@{oBhp@_|A|cAm~BpcKgsRpfHkuN~sA{mDt_AqgD~_Ak_Exa@}uBlg@_mDx`@krDl[itDpa@g{FtUyuEvKwrCpZc_JtJ{nDfBqo@vE_eBfOetFzV{eZh@co@lAgaEjBybBfNmpGtRw|EfIywApP}cB|PabB`Ru~AzXm~B`YmgC~`Au|Gp{C{dQ|mDs}RfdD}vQphDazPtcDq`Onc@wpBx|DmvMzgDa{JpnOwkj@ljNs`k@pvEarVfgD_aTx]ozBjvA{~JlzAq|Kfz@_kGrbCcoRrtBk~OjzC_oUjiBihO`p@c~Mns@g}PvRoxF",
+      "precision": 7,
+      "length": 94
+     },
+     "bikesAllowed": false,
+     "wheelchairAccessible": "NOT_ACCESSIBLE",
+     "reservation": "NONE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Frankfurt (Main) Hauptwache",
+      "lat": 50.113845999999995,
+      "lon": 8.67869,
+      "level": -3.0,
+      "arrival": "2026-11-23T07:08:00Z",
+      "departure": "2026-11-23T07:08:00Z",
+      "scheduledArrival": "2026-11-23T07:08:00Z",
+      "scheduledDeparture": "2026-11-23T07:08:00Z",
+      "vertexType": "TRANSIT",
+      "cancelled": false
+     },
+     "to": {
+      "name": "END",
+      "lat": 50.1157,
+      "lon": 8.6717,
+      "level": 0.0,
+      "arrival": "2026-11-23T07:18:00Z",
+      "scheduledArrival": "2026-11-23T07:18:00Z",
+      "vertexType": "NORMAL"
+     },
+     "duration": 600,
+     "startTime": "2026-11-23T07:08:00Z",
+     "endTime": "2026-11-23T07:18:00Z",
+     "scheduledStartTime": "2026-11-23T07:08:00Z",
+     "scheduledEndTime": "2026-11-23T07:18:00Z",
+     "realTime": false,
+     "scheduled": false,
+     "distance": 659.0,
+     "legGeometry": {
+      "points": "_~`zz\\ws`pdDxK_rD??_K_A??aBrg@??iNruD??jHnD??eLxm@??gVrbA??eo@r}C??{_@cF??{n@mI??sVpkJd@pwIlU|~E??mUnaD??uUhqB??Fdr@??uRncB??qVpeA??}i@mT??koA|yK??ktAnjM??gw@jsG??}PbwA??_Er\\??}o@`eF??yvAf`L??yC|U??uJhv@??mU~e@??cuAlpD??aGj^??mb@~xC??gT|oA??c^puB??u~@~{F??w~DqD",
+      "precision": 7,
+      "length": 70
+     }
+    }
+   ]
+  }
+ ]
+}

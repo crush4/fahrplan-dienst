@@ -7,6 +7,11 @@ ISO 8601 in UTC. Die App rechnet sie in die Ortszeit um.
 Jedes Teilstück trägt außerdem seinen Streckenverlauf als "weg": Punkte [Breite, Länge] vom Einstieg zum Ausstieg,
 höchstens MAX_PUNKTE. Transitous liefert ihn je Abschnitt in "legGeometry" als kodierte Polylinie mit eigener
 Genauigkeit ("precision", bei /api/v1/plan 7 Nachkommastellen).
+
+„Früher aussteigen“: Transitous lässt eine Fahrt manchmal einen Halt zu weit laufen und schickt den Fahrgast zu Fuß
+zurück. Kennt der Dienst das Ziel der Anfrage, prüft er deshalb die Zwischenhalte der letzten Fahrt und lässt sie an
+dem Halt enden, von dem man früher oder mit deutlich kürzerem Fußweg ankommt. Die Verbindung trägt dann
+"angepasst": "frueher_aussteigen".
 """
 
 from __future__ import annotations
@@ -16,7 +21,7 @@ import math
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from . import VERSION
@@ -28,6 +33,14 @@ FUSS = "FUSS"
 MAX_PUNKTE = 120
 # Längere Polylinien liest der Dienst nicht (der Verlauf eines ICE quer durchs Land braucht etwa 50.000 Zeichen).
 MAX_POLYLINIE = 400_000
+# Früher aussteigen: Der Fußweg ist nur als Luftlinie bekannt. Umweg und Gehtempo sind vorsichtig geschätzt.
+UMWEG = 1.3
+GEHTEMPO_M_S = 1.25
+# Ein früherer Ausstieg lohnt, wenn man so viele Minuten eher am Ziel ist …
+MIN_FRUEHER_MIN = 2
+# … oder nicht später ankommt und so viele Meter weniger läuft.
+MIN_KUERZER_M = 300
+FRUEHER_AUSSTEIGEN = "frueher_aussteigen"
 
 # Verkehrsmittel von MOTIS → kurze deutsche Art. Unbekanntes wird zu „SONST“.
 _ARTEN = {
@@ -100,31 +113,161 @@ def hole(url: str, kontakt: str) -> dict[str, Any]:
 # ---------------------------------------------------------------- Umformen
 
 
-def forme_um(roh: dict[str, Any]) -> list[dict[str, Any]]:
-    """Alle Verbindungen der Antwort in der kurzen Form. Kaputte Einträge fallen weg."""
+def forme_um(roh: dict[str, Any], ziel: tuple[float, float] | None = None) -> list[dict[str, Any]]:
+    """Alle Verbindungen der Antwort in der kurzen Form. Kaputte Einträge fallen weg.
+
+    `ziel` ist das Ziel der Anfrage (Breite, Länge). Mit ihm prüft der Dienst, ob man eher aussteigen sollte;
+    ohne bleibt jede Verbindung, wie Transitous sie liefert.
+    """
     verbindungen = []
     for eintrag in roh.get("itineraries") or []:
-        v = _verbindung(eintrag)
+        v = _verbindung(eintrag, ziel)
         if v is not None:
             verbindungen.append(v)
     return verbindungen
 
 
-def _verbindung(eintrag: Any) -> dict[str, Any] | None:
+def _verbindung(eintrag: Any, ziel: tuple[float, float] | None = None) -> dict[str, Any] | None:
     if not isinstance(eintrag, dict):
         return None
-    teile = [t for t in (_teil(l) for l in eintrag.get("legs") or []) if t is not None]
+    paare = [(leg, teil) for leg, teil in ((l, _teil(l)) for l in eintrag.get("legs") or []) if teil is not None]
+    teile = [teil for _, teil in paare]
     ab, an = _text(eintrag.get("startTime")), _text(eintrag.get("endTime"))
     if not teile or not ab or not an:
         return None
     dauer = eintrag.get("duration")
-    return {
+    verbindung = {
         "ab": ab,
         "an": an,
         "dauer_min": round(dauer / 60) if isinstance(dauer, (int, float)) else _minuten(ab, an),
         "umstiege": max(0, sum(1 for t in teile if t["art"] != FUSS) - 1),
         "teile": teile,
     }
+    if ziel is not None and len(paare) >= 2:
+        try:
+            _steige_frueher_aus(verbindung, paare[-2][0], ziel)
+        except Exception:  # noqa: BLE001 - eine Zugabe; im Zweifel bleibt die Verbindung, wie sie kam
+            pass
+    return verbindung
+
+
+# ---------------------------------------------------------------- Früher aussteigen
+
+
+def _steige_frueher_aus(verbindung: dict[str, Any], leg: dict[str, Any], ziel: tuple[float, float]) -> None:
+    """Lässt die letzte Fahrt an einem Zwischenhalt enden, wenn man von dort besser ans Ziel kommt.
+
+    `leg` ist der Abschnitt der Rohantwort zur letzten Fahrt. Geprüft wird nur, wenn nach ihr nichts als ein Fußweg
+    zum Ziel folgt. Erst wenn alles Neue fertig gerechnet ist, wird die Verbindung geändert.
+    """
+    teile = verbindung["teile"]
+    fahrt, fussweg = teile[-2], teile[-1]
+    zielpunkt = _punkt(ziel[0], ziel[1])
+    halte = leg.get("intermediateStops")
+    if (fussweg["art"] != FUSS or fahrt["art"] == FUSS or fahrt.get("ausfall") or zielpunkt is None
+            or not isinstance(halte, list)):
+        return
+    bisher_an = _zeit(fussweg["nach"]["zeit"])
+    if bisher_an is None:
+        return
+    bisher_meter = _fussweg_meter(fussweg, fahrt, ziel)
+
+    bester: tuple[datetime, int, int, dict[str, Any], datetime, list[float], int] | None = None
+    for nummer, halt in enumerate(halte):
+        if not isinstance(halt, dict) or halt.get("cancelled") is True or halt.get("dropoffType") == "NOT_ALLOWED":
+            continue
+        punkt = _punkt(halt.get("lat"), halt.get("lon"))
+        ankunft = _zeit(_text(halt.get("arrival")) or "")
+        if punkt is None or ankunft is None:
+            continue
+        # Gemessen wird mit den genauen Koordinaten, nicht mit den für die Karte gerundeten.
+        meter = round(luftlinie_m((halt["lat"], halt["lon"]), ziel) * UMWEG)
+        minuten = gehzeit_min(meter)
+        am_ziel = ankunft + timedelta(minutes=minuten)
+        frueher = am_ziel <= bisher_an - timedelta(minutes=MIN_FRUEHER_MIN)
+        kuerzer = am_ziel <= bisher_an and bisher_meter is not None and bisher_meter - meter >= MIN_KUERZER_M
+        if not (frueher or kuerzer):
+            continue
+        # Die früheste Ankunft am Ziel gewinnt, bei Gleichstand der kürzere Fußweg.
+        if bester is None or (am_ziel, meter) < (bester[0], bester[1]):
+            bester = (am_ziel, meter, nummer, halt, ankunft, punkt, minuten)
+    if bester is None:
+        return
+    am_ziel, meter, nummer, halt, ankunft, punkt, minuten = bester
+
+    aus_zeit, an_zeit = _iso(ankunft), _iso(am_ziel)
+    ausstieg = _halt(halt, _text(halt.get("scheduledArrival")) or aus_zeit, aus_zeit)
+    neue_fahrt = dict(fahrt, nach=ausstieg, dauer_min=_minuten(fahrt["von"]["zeit"], aus_zeit), zwischenhalte=nummer)
+    weg = _weg_bis(leg, fahrt["von"], punkt)
+    if weg is not None:
+        neue_fahrt["weg"] = weg
+    else:
+        neue_fahrt.pop("weg", None)
+    neuer_fussweg = {
+        "art": FUSS,
+        "von": _halt(halt, aus_zeit, aus_zeit, mit_gleis=False),
+        "nach": dict(fussweg["nach"], plan=an_zeit, zeit=an_zeit),
+        "dauer_min": minuten,
+        "weg": [punkt, zielpunkt],
+        "meter": meter,
+    }
+    teile[-2:] = [neue_fahrt, neuer_fussweg]
+    verbindung["an"] = an_zeit
+    verbindung["dauer_min"] = _minuten(verbindung["ab"], an_zeit)
+    verbindung["angepasst"] = FRUEHER_AUSSTEIGEN
+
+
+def luftlinie_m(a: list[float] | tuple[float, float], b: list[float] | tuple[float, float]) -> float:
+    """Entfernung zweier Punkte (Breite, Länge) in Metern auf der Kugel."""
+    lat1, lon1, lat2, lon2 = (math.radians(w) for w in (a[0], a[1], b[0], b[1]))
+    h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+    return 2 * 6371000.0 * math.asin(min(1.0, math.sqrt(h)))
+
+
+def gehzeit_min(meter: float) -> int:
+    """Gehzeit für einen Fußweg dieser Länge: auf volle Minuten aufgerundet, mindestens eine."""
+    return max(1, math.ceil(meter / GEHTEMPO_M_S / 60))
+
+
+def _fussweg_meter(fussweg: dict[str, Any], fahrt: dict[str, Any], ziel: tuple[float, float]) -> int | None:
+    """Länge des bisherigen Fußwegs: wie Transitous sie nennt, sonst geschätzt wie bei einem neuen Ausstieg."""
+    if "meter" in fussweg:
+        return fussweg["meter"]
+    ausstieg = _punkt(fahrt["nach"].get("lat"), fahrt["nach"].get("lon"))
+    if ausstieg is None:
+        return None
+    return round(luftlinie_m((fahrt["nach"]["lat"], fahrt["nach"]["lon"]), ziel) * UMWEG)
+
+
+def _weg_bis(leg: dict[str, Any], von: dict[str, Any], halt: list[float]) -> list[list[float]] | None:
+    """Streckenverlauf der Fahrt bis zu einem Zwischenhalt: am Punkt abgeschnitten, der dem Halt am nächsten
+    liegt, und mit dem Halt als Ende. Ohne brauchbare Geometrie die gerade Linie vom Einstieg zum Halt."""
+    try:
+        weg = _aus_geometrie(leg.get("legGeometry"))
+    except (ValueError, TypeError, OverflowError, ArithmeticError):
+        weg = []
+    if len(weg) >= 2:
+        naechster = min(range(len(weg)), key=lambda i: luftlinie_m(weg[i], halt))
+        weg = weg[:naechster + 1]
+        if weg[-1] != halt:
+            weg.append(halt)
+        if len(weg) >= 2:
+            return duenne_aus(weg)
+    start = _punkt(von.get("lat"), von.get("lon"))
+    return [start, halt] if start is not None else None
+
+
+def _zeit(iso: str) -> datetime | None:
+    """Eine ISO-Zeit mit Zeitzone als Zeitpunkt in UTC; None, wenn sie nicht lesbar ist."""
+    try:
+        zeit = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    return zeit.astimezone(timezone.utc) if zeit.tzinfo is not None else None
+
+
+def _iso(zeit: datetime) -> str:
+    return zeit.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _teil(leg: Any) -> dict[str, Any] | None:
