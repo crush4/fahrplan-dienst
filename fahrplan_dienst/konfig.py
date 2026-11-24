@@ -28,11 +28,13 @@ class Konfig:
     zugang_schluessel: str | None = field(default=None, repr=False)
     # Die letzte Fahrt an einem früheren Halt enden lassen, wenn man von dort besser ans Ziel kommt.
     frueher_aussteigen: bool = True
+    # Die letzte Fahrt erst an einem späteren Halt enden lassen; kostet bis zu drei Abfragen je Anfrage.
+    spaeter_aussteigen: bool = True
 
     @staticmethod
     def aus_umgebung(env: Mapping[str, str]) -> "Konfig":
-        """Liest PORT, KONTAKT, ZUGANG_SCHLUESSEL, TRANSITOUS_URL, MAX_JE_STUNDE, TAFEL_URL, OHNE_TAFEL und
-        FRUEHER_AUSSTEIGEN. OHNE_SCHLUESSEL=1 erlaubt lokale Tests ohne Zugangsschlüssel."""
+        """Liest PORT, KONTAKT, ZUGANG_SCHLUESSEL, TRANSITOUS_URL, MAX_JE_STUNDE, TAFEL_URL, OHNE_TAFEL,
+        FRUEHER_AUSSTEIGEN und SPAETER_AUSSTEIGEN. OHNE_SCHLUESSEL=1 erlaubt lokale Tests ohne Zugangsschlüssel."""
         try:
             port = int(env.get("PORT") or "8080")
         except ValueError:
@@ -72,10 +74,16 @@ class Konfig:
             raise ValueError(
                 f"ZUGANG_SCHLUESSEL braucht mindestens {MIN_SCHLUESSEL} Zeichen (nur Buchstaben und Ziffern)"
             )
-        schalter = (env.get("FRUEHER_AUSSTEIGEN") or "1").strip().lower()
-        if schalter not in _JA | _NEIN:
-            raise ValueError("FRUEHER_AUSSTEIGEN ist weder 1 noch 0")
-        return Konfig(port, kontakt, quelle, max_je_stunde, tafel, schluessel, schalter in _JA)
+        return Konfig(port, kontakt, quelle, max_je_stunde, tafel, schluessel,
+                      _schalter(env, "FRUEHER_AUSSTEIGEN"), _schalter(env, "SPAETER_AUSSTEIGEN"))
+
+
+def _schalter(env: Mapping[str, str], name: str) -> bool:
+    """Ein Schalter, der ohne Angabe an ist."""
+    wert = (env.get(name) or "1").strip().lower()
+    if wert not in _JA | _NEIN:
+        raise ValueError(f"{name} ist weder 1 noch 0")
+    return wert in _JA
 
 
 def _kontakt_gueltig(kontakt: str) -> bool:

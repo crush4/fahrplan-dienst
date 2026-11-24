@@ -12,6 +12,13 @@ Genauigkeit ("precision", bei /api/v1/plan 7 Nachkommastellen).
 zurück. Kennt der Dienst das Ziel der Anfrage, prüft er deshalb die Zwischenhalte der letzten Fahrt und lässt sie an
 dem Halt enden, von dem man früher oder mit deutlich kürzerem Fußweg ankommt. Die Verbindung trägt dann
 "angepasst": "frueher_aussteigen".
+
+„Später aussteigen“: Manchmal wählt Transitous einen Halt nie als Ausstieg (etwa wenn der Bahnsteig in OSM nicht an
+die Fußwege angebunden ist) und schickt den Fahrgast vom Halt davor weit zu Fuß. Ist der Fußweg am Ende länger als
+MIN_FUSSWEG_SPAETER_M, holt der Dienst die Halte derselben Fahrt nach dem Ausstieg (/api/v1/trip) und lässt die Fahrt
+an einem der nächsten MAX_HALTE_SPAETER Halte enden, wenn man von dort früher oder mit deutlich kürzerem Fußweg
+ankommt. Die Verbindung trägt dann "angepasst": "spaeter_aussteigen". Wie oft er Fahrten nachfragt, begrenzt der
+Aufrufer über `hole_fahrt` (server.py).
 """
 
 from __future__ import annotations
@@ -22,7 +29,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Callable
 
 from . import VERSION
 
@@ -41,6 +48,11 @@ MIN_FRUEHER_MIN = 2
 # … oder nicht später ankommt und so viele Meter weniger läuft.
 MIN_KUERZER_M = 300
 FRUEHER_AUSSTEIGEN = "frueher_aussteigen"
+SPAETER_AUSSTEIGEN = "spaeter_aussteigen"
+# Später aussteigen: nur prüfen, wenn der Fußweg am Ende (Luftlinie × UMWEG) länger ist …
+MIN_FUSSWEG_SPAETER_M = 300
+# … und höchstens so viele Halte hinter dem geplanten Ausstieg.
+MAX_HALTE_SPAETER = 3
 
 # Verkehrsmittel von MOTIS → kurze deutsche Art. Unbekanntes wird zu „SONST“.
 _ARTEN = {
@@ -87,6 +99,11 @@ def adresse(quelle: str, von: tuple[float, float], nach: tuple[float, float], ze
     return f"{quelle}/api/v1/plan?{urllib.parse.urlencode(werte)}"
 
 
+def fahrt_adresse(quelle: str, trip_id: str) -> str:
+    """Abfrage aller Halte einer Fahrt."""
+    return f"{quelle}/api/v1/trip?{urllib.parse.urlencode({'tripId': trip_id})}"
+
+
 def hole(url: str, kontakt: str) -> dict[str, Any]:
     """Eine Abfrage. Wirft QuelleFehler, wenn nichts Brauchbares kommt."""
     anfrage = urllib.request.Request(url, headers={"User-Agent": nutzer_kennung(kontakt), "Accept": "application/json"})
@@ -113,21 +130,28 @@ def hole(url: str, kontakt: str) -> dict[str, Any]:
 # ---------------------------------------------------------------- Umformen
 
 
-def forme_um(roh: dict[str, Any], ziel: tuple[float, float] | None = None) -> list[dict[str, Any]]:
-    """Alle Verbindungen der Antwort in der kurzen Form. Kaputte Einträge fallen weg.
+def forme_um(roh: dict[str, Any], ziel: tuple[float, float] | None = None, *, frueher: bool = True,
+             hole_fahrt: Callable[[str], dict[str, Any] | None] | None = None,
+             anzahl: int | None = None) -> list[dict[str, Any]]:
+    """Die Verbindungen der Antwort in der kurzen Form, höchstens `anzahl`. Kaputte Einträge fallen weg.
 
-    `ziel` ist das Ziel der Anfrage (Breite, Länge). Mit ihm prüft der Dienst, ob man eher aussteigen sollte;
-    ohne bleibt jede Verbindung, wie Transitous sie liefert.
+    `ziel` ist das Ziel der Anfrage (Breite, Länge). Mit ihm prüft der Dienst, ob man eher aussteigen sollte
+    (abschaltbar mit `frueher=False`); ohne bleibt jede Verbindung, wie Transitous sie liefert.
+    `hole_fahrt(tripId)` liefert die Antwort von /api/v1/trip oder None. Nur mit ihr (und `ziel`) prüft der Dienst,
+    ob man später aussteigen sollte. Gefragt wird sie nur für Verbindungen, die in die Antwort kommen.
     """
     verbindungen = []
     for eintrag in roh.get("itineraries") or []:
-        v = _verbindung(eintrag, ziel)
+        if anzahl is not None and len(verbindungen) >= anzahl:
+            break
+        v = _verbindung(eintrag, ziel, frueher, hole_fahrt)
         if v is not None:
             verbindungen.append(v)
     return verbindungen
 
 
-def _verbindung(eintrag: Any, ziel: tuple[float, float] | None = None) -> dict[str, Any] | None:
+def _verbindung(eintrag: Any, ziel: tuple[float, float] | None = None, frueher: bool = True,
+                hole_fahrt: Callable[[str], dict[str, Any] | None] | None = None) -> dict[str, Any] | None:
     if not isinstance(eintrag, dict):
         return None
     paare = [(leg, teil) for leg, teil in ((l, _teil(l)) for l in eintrag.get("legs") or []) if teil is not None]
@@ -144,10 +168,16 @@ def _verbindung(eintrag: Any, ziel: tuple[float, float] | None = None) -> dict[s
         "teile": teile,
     }
     if ziel is not None and len(paare) >= 2:
-        try:
-            _steige_frueher_aus(verbindung, paare[-2][0], ziel)
-        except Exception:  # noqa: BLE001 - eine Zugabe; im Zweifel bleibt die Verbindung, wie sie kam
-            pass
+        if frueher:
+            try:
+                _steige_frueher_aus(verbindung, paare[-2][0], ziel)
+            except Exception:  # noqa: BLE001 - eine Zugabe; im Zweifel bleibt die Verbindung, wie sie kam
+                pass
+        if hole_fahrt is not None and "angepasst" not in verbindung:
+            try:
+                _steige_spaeter_aus(verbindung, paare[-2][0], ziel, hole_fahrt)
+            except Exception:  # noqa: BLE001 - wie oben
+                pass
     return verbindung
 
 
@@ -172,33 +202,57 @@ def _steige_frueher_aus(verbindung: dict[str, Any], leg: dict[str, Any], ziel: t
         return
     bisher_meter = _fussweg_meter(fussweg, fahrt, ziel)
 
-    bester: tuple[datetime, int, int, dict[str, Any], datetime, list[float], int] | None = None
+    bester: tuple[_Ausstieg, int] | None = None
     for nummer, halt in enumerate(halte):
-        if not isinstance(halt, dict) or halt.get("cancelled") is True or halt.get("dropoffType") == "NOT_ALLOWED":
-            continue
-        punkt = _punkt(halt.get("lat"), halt.get("lon"))
-        ankunft = _zeit(_text(halt.get("arrival")) or "")
-        if punkt is None or ankunft is None:
-            continue
-        # Gemessen wird mit den genauen Koordinaten, nicht mit den für die Karte gerundeten.
-        meter = round(luftlinie_m((halt["lat"], halt["lon"]), ziel) * UMWEG)
-        minuten = gehzeit_min(meter)
-        am_ziel = ankunft + timedelta(minutes=minuten)
-        frueher = am_ziel <= bisher_an - timedelta(minutes=MIN_FRUEHER_MIN)
-        kuerzer = am_ziel <= bisher_an and bisher_meter is not None and bisher_meter - meter >= MIN_KUERZER_M
-        if not (frueher or kuerzer):
-            continue
+        kandidat = _bewerte(halt, ziel, bisher_an, bisher_meter)
         # Die früheste Ankunft am Ziel gewinnt, bei Gleichstand der kürzere Fußweg.
-        if bester is None or (am_ziel, meter) < (bester[0], bester[1]):
-            bester = (am_ziel, meter, nummer, halt, ankunft, punkt, minuten)
+        if kandidat is not None and (bester is None or kandidat.rang < bester[0].rang):
+            bester = (kandidat, nummer)
     if bester is None:
         return
-    am_ziel, meter, nummer, halt, ankunft, punkt, minuten = bester
+    ausstieg, nummer = bester
+    _setze_ausstieg(verbindung, ausstieg, zielpunkt, nummer, _weg_bis(leg, fahrt["von"], ausstieg.punkt),
+                    FRUEHER_AUSSTEIGEN)
 
-    aus_zeit, an_zeit = _iso(ankunft), _iso(am_ziel)
-    ausstieg = _halt(halt, _text(halt.get("scheduledArrival")) or aus_zeit, aus_zeit)
-    neue_fahrt = dict(fahrt, nach=ausstieg, dauer_min=_minuten(fahrt["von"]["zeit"], aus_zeit), zwischenhalte=nummer)
-    weg = _weg_bis(leg, fahrt["von"], punkt)
+
+class _Ausstieg:
+    """Ein Halt, an dem sich der Ausstieg lohnt, mit allem, was der neue Fußweg braucht."""
+
+    def __init__(self, halt: dict[str, Any], punkt: list[float], ankunft: datetime, meter: int, minuten: int):
+        self.halt, self.punkt, self.ankunft, self.meter, self.minuten = halt, punkt, ankunft, meter, minuten
+        self.am_ziel = ankunft + timedelta(minutes=minuten)
+        self.rang = (self.am_ziel, meter)
+
+
+def _bewerte(halt: Any, ziel: tuple[float, float], bisher_an: datetime, bisher_meter: int | None) -> _Ausstieg | None:
+    """Der Halt als möglicher Ausstieg; None, wenn er nicht taugt oder sich nicht lohnt.
+
+    Er lohnt, wenn man mindestens MIN_FRUEHER_MIN Minuten früher am Ziel ist, oder nicht später und mindestens
+    MIN_KUERZER_M weniger läuft.
+    """
+    if not isinstance(halt, dict) or halt.get("cancelled") is True or halt.get("dropoffType") == "NOT_ALLOWED":
+        return None
+    punkt = _punkt(halt.get("lat"), halt.get("lon"))
+    ankunft = _zeit(_text(halt.get("arrival")) or "")
+    if punkt is None or ankunft is None:
+        return None
+    # Gemessen wird mit den genauen Koordinaten, nicht mit den für die Karte gerundeten.
+    meter = round(luftlinie_m((halt["lat"], halt["lon"]), ziel) * UMWEG)
+    kandidat = _Ausstieg(halt, punkt, ankunft, meter, gehzeit_min(meter))
+    frueher = kandidat.am_ziel <= bisher_an - timedelta(minutes=MIN_FRUEHER_MIN)
+    kuerzer = kandidat.am_ziel <= bisher_an and bisher_meter is not None and bisher_meter - meter >= MIN_KUERZER_M
+    return kandidat if frueher or kuerzer else None
+
+
+def _setze_ausstieg(verbindung: dict[str, Any], ausstieg: _Ausstieg, zielpunkt: list[float], zwischenhalte: int,
+                    weg: list[list[float]] | None, grund: str) -> None:
+    """Lässt die letzte Fahrt am neuen Halt enden, ersetzt den Fußweg und rechnet die Verbindung neu."""
+    teile = verbindung["teile"]
+    fahrt, fussweg = teile[-2], teile[-1]
+    halt = ausstieg.halt
+    aus_zeit, an_zeit = _iso(ausstieg.ankunft), _iso(ausstieg.am_ziel)
+    neue_fahrt = dict(fahrt, nach=_halt(halt, _text(halt.get("scheduledArrival")) or aus_zeit, aus_zeit),
+                      dauer_min=_minuten(fahrt["von"]["zeit"], aus_zeit), zwischenhalte=zwischenhalte)
     if weg is not None:
         neue_fahrt["weg"] = weg
     else:
@@ -207,14 +261,131 @@ def _steige_frueher_aus(verbindung: dict[str, Any], leg: dict[str, Any], ziel: t
         "art": FUSS,
         "von": _halt(halt, aus_zeit, aus_zeit, mit_gleis=False),
         "nach": dict(fussweg["nach"], plan=an_zeit, zeit=an_zeit),
-        "dauer_min": minuten,
-        "weg": [punkt, zielpunkt],
-        "meter": meter,
+        "dauer_min": ausstieg.minuten,
+        "weg": [ausstieg.punkt, zielpunkt],
+        "meter": ausstieg.meter,
     }
     teile[-2:] = [neue_fahrt, neuer_fussweg]
     verbindung["an"] = an_zeit
     verbindung["dauer_min"] = _minuten(verbindung["ab"], an_zeit)
-    verbindung["angepasst"] = FRUEHER_AUSSTEIGEN
+    verbindung["angepasst"] = grund
+
+
+# ---------------------------------------------------------------- Später aussteigen
+
+
+def _steige_spaeter_aus(verbindung: dict[str, Any], leg: dict[str, Any], ziel: tuple[float, float],
+                        hole_fahrt: Callable[[str], dict[str, Any] | None]) -> None:
+    """Lässt die letzte Fahrt erst an einem der nächsten Halte enden, wenn man von dort besser ans Ziel kommt.
+
+    `leg` ist der Abschnitt der Rohantwort zur letzten Fahrt. Die Halte nach dem geplanten Ausstieg kennt nur die
+    Antwort von /api/v1/trip; gefragt wird sie erst, wenn der Fußweg am Ende lang genug ist. Erst wenn alles Neue
+    fertig gerechnet ist, wird die Verbindung geändert.
+    """
+    teile = verbindung["teile"]
+    fahrt, fussweg = teile[-2], teile[-1]
+    zielpunkt = _punkt(ziel[0], ziel[1])
+    trip_id = _text(leg.get("tripId"))
+    if fussweg["art"] != FUSS or fahrt["art"] == FUSS or fahrt.get("ausfall") or zielpunkt is None or not trip_id:
+        return
+    bisher_an = _zeit(fussweg["nach"]["zeit"])
+    bisher_aus = _zeit(fahrt["nach"]["zeit"])
+    alt = leg.get("to")
+    if bisher_an is None or bisher_aus is None or _punkt(alt.get("lat"), alt.get("lon")) is None:
+        return
+    # Die Schwelle misst wie der neue Fußweg: Luftlinie mal Umweg, mit den genauen Koordinaten.
+    if luftlinie_m((alt["lat"], alt["lon"]), ziel) * UMWEG <= MIN_FUSSWEG_SPAETER_M:
+        return
+    bisher_meter = _fussweg_meter(fussweg, fahrt, ziel)
+
+    fahrt_roh = hole_fahrt(trip_id)
+    trip_leg = _fahrt_leg(fahrt_roh, trip_id)
+    if trip_leg is None:
+        return
+    halte = [trip_leg.get("from")] + list(trip_leg.get("intermediateStops") or []) + [trip_leg.get("to")]
+    stelle = _finde_ausstieg(halte, leg)
+    if stelle is None:
+        return
+
+    bester: tuple[_Ausstieg, int] | None = None
+    for schritt, halt in enumerate(halte[stelle + 1:stelle + 1 + MAX_HALTE_SPAETER]):
+        kandidat = _bewerte(halt, ziel, bisher_an, bisher_meter)
+        # Ein späterer Halt kann nicht vor dem geplanten Ausstieg erreicht sein; sonst passt die Antwort nicht.
+        if kandidat is None or kandidat.ankunft < bisher_aus:
+            continue
+        if bester is None or kandidat.rang < bester[0].rang:
+            bester = (kandidat, schritt)
+    if bester is None:
+        return
+    ausstieg, schritt = bester
+    # Der alte Ausstieg und alle Halte bis zum neuen werden zu Zwischenhalten.
+    zwischenhalte = fahrt["zwischenhalte"] + 1 + schritt
+    weg = _weg_weiter(fahrt.get("weg"), trip_leg, halte[stelle], ausstieg.punkt)
+    _setze_ausstieg(verbindung, ausstieg, zielpunkt, zwischenhalte, weg, SPAETER_AUSSTEIGEN)
+
+
+def _fahrt_leg(roh: Any, trip_id: str) -> dict[str, Any] | None:
+    """Der Abschnitt der Fahrt aus der Antwort von /api/v1/trip; None, wenn sie nicht passt."""
+    if not isinstance(roh, dict):
+        return None
+    for leg in roh.get("legs") or []:
+        if (isinstance(leg, dict) and leg.get("mode") != "WALK" and _text(leg.get("tripId")) in (None, trip_id)
+                and isinstance(leg.get("from"), dict) and isinstance(leg.get("to"), dict)
+                and isinstance(leg.get("intermediateStops") or [], list)):
+            return leg
+    return None
+
+
+def _finde_ausstieg(halte: list[Any], leg: dict[str, Any]) -> int | None:
+    """Stelle des geplanten Ausstiegs unter allen Halten der Fahrt.
+
+    Er muss zur selben Zeit (nach Plan) ankommen und dieselbe Haltestelle sein: gleiche stopId, sonst gleicher Name
+    oder höchstens 100 m entfernt. Eine Ringlinie hält so nur einmal zur passenden Zeit.
+    """
+    alt = leg["to"]
+    plan = _zeit(_text(alt.get("scheduledArrival")) or _text(leg.get("scheduledEndTime")) or "")
+    if plan is None:
+        return None
+    for stelle, halt in enumerate(halte):
+        if not isinstance(halt, dict):
+            continue
+        if _zeit(_text(halt.get("scheduledArrival")) or _text(halt.get("arrival")) or "") != plan:
+            continue
+        kennung, alt_kennung = _text(halt.get("stopId")), _text(alt.get("stopId"))
+        if kennung and alt_kennung:
+            if kennung == alt_kennung:
+                return stelle
+            continue
+        if _text(halt.get("name")) and _text(halt.get("name")) == _text(alt.get("name")):
+            return stelle
+        if (_punkt(halt.get("lat"), halt.get("lon")) is not None
+                and luftlinie_m((halt["lat"], halt["lon"]), (alt["lat"], alt["lon"])) <= 100):
+            return stelle
+    return None
+
+
+def _weg_weiter(bisher: Any, trip_leg: dict[str, Any], alt: dict[str, Any],
+                neu: list[float]) -> list[list[float]] | None:
+    """Streckenverlauf der Fahrt bis zum neuen Ausstieg: der bisherige, verlängert um das Stück der ganzen Fahrt vom
+    alten Ausstieg bis zum neuen. Ohne brauchbare Geometrie der Fahrt die gerade Linie zum neuen Halt; ohne
+    bisherigen Verlauf keiner."""
+    if not isinstance(bisher, list) or len(bisher) < 2:
+        return None
+    try:
+        ganz = _aus_geometrie(trip_leg.get("legGeometry"))
+    except (ValueError, TypeError, OverflowError, ArithmeticError):
+        ganz = []
+    stueck: list[list[float]] = []
+    alt_punkt = _punkt(alt.get("lat"), alt.get("lon"))
+    if len(ganz) >= 2 and alt_punkt is not None:
+        von = min(range(len(ganz)), key=lambda i: luftlinie_m(ganz[i], alt_punkt))
+        bis = min(range(von, len(ganz)), key=lambda i: luftlinie_m(ganz[i], neu))
+        stueck = ganz[von + 1:bis + 1]
+    weg = list(bisher)
+    for punkt in stueck + [neu]:
+        if weg[-1] != punkt:
+            weg.append(punkt)
+    return duenne_aus(weg)
 
 
 def luftlinie_m(a: list[float] | tuple[float, float], b: list[float] | tuple[float, float]) -> float:

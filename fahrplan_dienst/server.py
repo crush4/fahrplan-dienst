@@ -12,6 +12,10 @@
                       Jedes Teilstück trägt seinen Streckenverlauf als "weg": [[Breite, Länge], …], höchstens 120.
                       Endet die letzte Fahrt besser an einem früheren Halt, steigt die Verbindung dort aus und
                       trägt "angepasst": "frueher_aussteigen" (abschaltbar mit FRUEHER_AUSSTEIGEN=0).
+                      Endet sie besser an einem der nächsten drei Halte derselben Fahrt, steigt sie dort aus und
+                      trägt "angepasst": "spaeter_aussteigen" (abschaltbar mit SPAETER_AUSSTEIGEN=0). Dafür fragt
+                      der Dienst je Anfrage höchstens MAX_FAHRTEN_JE_ANFRAGE Fahrten bei Transitous nach (/api/v1/trip),
+                      jede nur einmal in FAHRT_MERKEN_S; sie zählen zur Grenze je Stunde, ohne sie zu sprengen.
 
 Fehler kommen als {"fehler": "<Text>"} mit 400 (Werte), 401 (Schlüssel), 429 (eigene Grenze je Stunde),
 502/503/504 (Transitous). Gleiche Abfragen innerhalb einer Minute kommen aus dem Zwischenspeicher.
@@ -39,6 +43,11 @@ QUELLEN_URL = "https://transitous.org/sources/"
 MERKEN_S = 60
 MAX_GEMERKT = 200
 STANDARD_ANZAHL = 4
+# Später aussteigen: so viele Fahrten fragt eine Anfrage höchstens nach, und so lange gilt eine gefragte Fahrt
+# (auch eine, deren Abfrage scheiterte).
+MAX_FAHRTEN_JE_ANFRAGE = 3
+FAHRT_MERKEN_S = 300
+MAX_FAHRTEN_GEMERKT = 200
 _ZEIT = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})$")
 
 
@@ -62,6 +71,7 @@ class Dienst:
         self._sperre = threading.Lock()
         self._abfragen: deque[float] = deque()
         self._gemerkt: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+        self._fahrten: dict[str, tuple[float, dict[str, Any] | None]] = {}
 
     def zugang_ok(self, kopfwert: str | None) -> bool:
         schluessel = self.konfig.zugang_schluessel
@@ -103,9 +113,12 @@ class Dienst:
                 raise Abgelehnt(429, "Zu viele Abfragen in dieser Stunde. Bitte später noch einmal.")
             self._abfragen.append(jetzt)
         try:
+            roh = self._hole(url, self.konfig.kontakt)
             # Transitous liefert oft mehr als gewünscht; mehr als gefragt geht nicht weiter.
-            ziel = nach if self.konfig.frueher_aussteigen else None
-            ergebnis = transitous.forme_um(self._hole(url, self.konfig.kontakt), ziel)[:anzahl]
+            k = self.konfig
+            ergebnis = transitous.forme_um(
+                roh, nach if k.frueher_aussteigen or k.spaeter_aussteigen else None, frueher=k.frueher_aussteigen,
+                hole_fahrt=self._fahrt_holer() if k.spaeter_aussteigen else None, anzahl=anzahl)
         except transitous.QuelleFehler as fehler:
             raise Abgelehnt(fehler.status, str(fehler)) from None
         if self.tafeln is not None:
@@ -118,6 +131,40 @@ class Dienst:
                 self._gemerkt.clear()
             self._gemerkt[url] = (jetzt, ergebnis)
         return ergebnis
+
+    def _fahrt_holer(self) -> Callable[[str], dict[str, Any] | None]:
+        """Holt Fahrten für eine einzige Anfrage: höchstens MAX_FAHRTEN_JE_ANFRAGE neue Abfragen, jede tripId nur
+        einmal in FAHRT_MERKEN_S (für alle Anfragen). Ist die Grenze je Stunde erreicht, wird nicht gefragt.
+        Scheitert die Abfrage, gilt die Fahrt als unbekannt (None); die Verbindung bleibt dann, wie sie ist."""
+        rest = MAX_FAHRTEN_JE_ANFRAGE
+
+        def hole_fahrt(trip_id: str) -> dict[str, Any] | None:
+            nonlocal rest
+            jetzt = self._uhr()
+            with self._sperre:
+                gemerkt = self._fahrten.get(trip_id)
+                if gemerkt is not None and jetzt - gemerkt[0] < FAHRT_MERKEN_S:
+                    return gemerkt[1]
+                self._raeume(jetzt)
+                if rest <= 0 or len(self._abfragen) >= self.konfig.max_je_stunde:
+                    return None
+                rest -= 1
+                self._abfragen.append(jetzt)
+            try:
+                roh: dict[str, Any] | None = self._hole(
+                    transitous.fahrt_adresse(self.konfig.quelle, trip_id), self.konfig.kontakt)
+            except transitous.QuelleFehler as fehler:
+                LOG.warning("Fahrt nicht geholt: %s", fehler)
+                roh = None
+            with self._sperre:
+                if len(self._fahrten) >= MAX_FAHRTEN_GEMERKT:
+                    self._fahrten = {t: g for t, g in self._fahrten.items() if jetzt - g[0] < FAHRT_MERKEN_S}
+                    if len(self._fahrten) >= MAX_FAHRTEN_GEMERKT:
+                        self._fahrten.clear()
+                self._fahrten[trip_id] = (jetzt, roh)
+            return roh
+
+        return hole_fahrt
 
 
 def _eins(werte: dict[str, list[str]], name: str) -> str | None:
@@ -170,6 +217,7 @@ def baue_server(dienst: Dienst, host: str, port: int) -> ThreadingHTTPServer:
                     "gleis_quelle": "Bahnhofstafeln (DBF)" if dienst.tafeln is not None else None,
                     "tafeln_letzte_stunde": dienst.tafeln.abfragen_letzte_stunde() if dienst.tafeln else 0,
                     "frueher_aussteigen": dienst.konfig.frueher_aussteigen,
+                    "spaeter_aussteigen": dienst.konfig.spaeter_aussteigen,
                 })
                 return
             if teile.path != "/verbindungen":

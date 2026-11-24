@@ -69,8 +69,9 @@ Antwort (gekürzt):
   `[Breite, Länge]` in Dezimalgrad mit fünf Nachkommastellen, vom Einstieg zum Ausstieg, höchstens 120 je Teil
   (längere Verläufe sind gleichmäßig ausgedünnt). Fußwege folgen den Wegen, Züge und Busse ihrer Strecke. Kennt
   Transitous den Verlauf nicht, sind es nur die zwei Endpunkte; fehlen auch deren Koordinaten, fehlt das Feld.
-- `angepasst: "frueher_aussteigen"` steht an einer Verbindung, wenn der Dienst den Ausstieg vorverlegt hat, siehe
-  unten. Sonst fehlt das Feld.
+- `angepasst` steht an einer Verbindung, wenn der Dienst den Ausstieg verlegt hat: `"frueher_aussteigen"` (an einen
+  Halt davor) oder `"spaeter_aussteigen"` (an einen Halt danach), siehe unten. Sonst fehlt das Feld. Eine App sollte
+  unbekannte Werte wie „angepasst“ ohne nähere Angabe behandeln.
 
 ### Früher aussteigen
 
@@ -87,7 +88,31 @@ Dienst deshalb jeden Zwischenhalt dieser Fahrt:
 - Ausgefallene Fahrten und Halte ohne Koordinaten, ohne Ankunftszeit oder ohne Ausstieg bleiben außen vor. Später
   als von Transitous genannt kommt eine angepasste Verbindung nie an.
 
-Mit `FRUEHER_AUSSTEIGEN=0` liefert der Dienst jede Verbindung so, wie Transitous sie nennt.
+Mit `FRUEHER_AUSSTEIGEN=0` wird der Ausstieg nie vorverlegt.
+
+### Später aussteigen
+
+Manchmal wählt Transitous einen Halt nie als Ausstieg, etwa wenn der Bahnsteig in OpenStreetMap nicht an die Fußwege
+angebunden ist. Dann endet die Fahrt am Halt davor, und der Fußweg wird lang, obwohl dieselbe Fahrt eine Minute
+später direkt am Ziel hält. Die Halte nach dem geplanten Ausstieg stehen nicht in der Antwort; der Dienst fragt sie
+deshalb nach (`/api/v1/trip`), aber nur, wenn es sich lohnen kann:
+
+- Auf die letzte Fahrt folgt nur noch ein Fußweg zum Ziel, und der ist (Luftlinie mal 1,3) länger als 300 m.
+- Ist schon „früher aussteigen“ angewandt, wird nicht weiter gefragt.
+- Geprüft werden höchstens die drei Halte nach dem geplanten Ausstieg, nach denselben Regeln wie oben: mindestens
+  zwei Minuten früher am Ziel, oder nicht später und mindestens 300 m weniger Fußweg. Ausgefallene Halte und Halte
+  ohne Ausstieg zählen nicht.
+- Die Fahrt endet dann am neuen Halt; der alte Ausstieg und die Halte dazwischen zählen zu `zwischenhalte`, `weg`
+  folgt dem Verlauf der Fahrt bis zum neuen Halt (ohne Verlauf: die gerade Linie dorthin). Fußweg, `an` und
+  `dauer_min` sind neu gerechnet wie oben.
+- Scheitert die Nachfrage, kommt die Verbindung unverändert.
+
+Sparsam: Je Anfrage fragt der Dienst höchstens drei Fahrten nach, jede Fahrt nur einmal in fünf Minuten (auch für
+andere Anfragen, auch wenn die Nachfrage scheiterte). Diese Abfragen zählen zur Grenze je Stunde; ist sie erreicht,
+fragt der Dienst keine Fahrten mehr nach, statt die Grenze zu überschreiten.
+
+Mit `SPAETER_AUSSTEIGEN=0` wird der Ausstieg nie nach hinten verlegt. Sind beide Schalter aus, liefert der Dienst
+jede Verbindung so, wie Transitous sie nennt.
 
 `GET /status` (ohne Schlüssel) nennt Version, Quellen und die Zahl der Abfragen der letzten Stunde, getrennt nach
 Transitous und Bahnhofstafeln.
@@ -101,8 +126,8 @@ Transitous wird von Freiwilligen betrieben. Der Dienst hält sich deshalb an die
 [Regeln für die Nutzung](https://transitous.org/api/):
 
 - Jede Abfrage nennt Name, Version und Kontakt des Betreibers (`User-Agent`).
-- Höchstens 25 Abfragen je Stunde (einstellbar, nie mehr als 30). Das bleibt unter der Marke von 720 Abfragen
-  in 24 Stunden, ab der Transitous um Absprache bittet.
+- Höchstens 25 Abfragen je Stunde (einstellbar, nie mehr als 30), Nachfragen nach Fahrten eingerechnet. Das bleibt
+  unter der Marke von 720 Abfragen in 24 Stunden, ab der Transitous um Absprache bittet.
 - Gleiche Abfragen innerhalb einer Minute kommen aus dem Zwischenspeicher.
 - Kein automatisches Abfragen: Der Dienst fragt nur, wenn die App fragt.
 - Eine App, die die Verbindungen zeigt, nennt Transitous als Quelle und verlinkt `quellen_url`.
@@ -134,6 +159,7 @@ KONTAKT=du@example.org ZUGANG_SCHLUESSEL=<mindestens16Zeichen> python -m fahrpla
 | `TAFEL_URL` | Standard `https://dbf.finalrewind.org`; für eine eigene DBF-Instanz |
 | `OHNE_TAFEL=1` | Kein Gleis von den Bahnhofstafeln |
 | `FRUEHER_AUSSTEIGEN=0` | Den Ausstieg nie vorverlegen; Standard ist an |
+| `SPAETER_AUSSTEIGEN=0` | Den Ausstieg nie nach hinten verlegen (keine Nachfrage nach Fahrten); Standard ist an |
 
 Mit Docker: `docker build -t fahrplan-dienst .`, dann mit denselben Werten als Umgebung starten.
 Für CapRover liegt eine `captain-definition` bei.
